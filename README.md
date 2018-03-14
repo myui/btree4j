@@ -10,7 +10,11 @@ This software is originally developed for [XBird](https://github.com/myui/xbird/
 
 > _Rudolf Bayer and Karl Unterauer. "Prefix B-trees", Proc. ACM Trans. Database Syst. 2, 1, pp.11-26), March 1977._ [[DOI](https://doi.org/10.1145/320521.320530 )]
 
-* [Index file](https://en.wikipedia.org/wiki/Indexed_file) based on B+-tree is support[e](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BIndexFile.java)[d](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BIndexMultiValueFile.java).
+* Pointers are [compressed](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/utils/codec/VariableByteCodec.java) using [Variable Byte Codes](https://en.wikipedia.org/wiki/Variable-length_code) so that more keys/values are fit in memory.
+
+* Support both unique and non-unique indexing. Storing duplicate keys is allowed for non-unique indexing.
+
+* [Index file](https://en.wikipedia.org/wiki/Indexed_file) based on B+-tree is [supported](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BIndexFile.java). [Multiple values per a key](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BIndexMultiValueFile.java) is also supported.
 
 * Support variable-length [key](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/Key.java)/[value](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/Value.java)
 
