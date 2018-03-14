@@ -2,11 +2,11 @@ btree4j: Disk-based Prefix B+-tree written in Pure Java
 ======================================================= 
 [![License](http://img.shields.io/:license-Apache_v2-blue.svg)](https://github.com/myui/btree4j/blob/master/LICENSE)
 
-This software is originally developed for [XBird](https://github.com/myui/xbird/) based on [Apache Xindice](https://xml.apache.org/xindice/). 
+This software is originally developed for [XBird](https://github.com/myui/xbird/) based on [Apache Xindice](https://xml.apache.org/xindice/dev/guide-internals.html#3.+Data+storage). 
 
 # Features and Strength
 
-Applied many improvements over the original Xindice's implements as follows:
+Applied many improvements over the original Xindice's implementation as follows:
 
 * Implementes [Prefix B+-tree](https://dl.acm.org/citation.cfm?id=320530) in which prefixes are selected carefully to minimize their length.
 
