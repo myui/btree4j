@@ -24,4 +24,7 @@ Applied many improvements over the original Xindice's implements as follows:
 
 * Paging (virtual memory) support using [LRU cache replacement policy](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BTree.java) and [Freespace management](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/FreeList.java).
 
-* Minimum dependencies to external libraries
+* Deletion is, of course, supported.
+
+* Minimum dependencies to external libraries. Runs on Java 7.
+
