@@ -26,5 +26,7 @@ Applied many improvements over the original Xindice's implementation as follows:
 
 * Deletion is, of course, supported.
 
+* Support efficient Bulk-loading.
+
 * Minimum dependencies to external libraries. Runs on Java 7.
 
