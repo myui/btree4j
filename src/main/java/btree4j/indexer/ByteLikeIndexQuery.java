@@ -1,29 +1,29 @@
 /*
- * @(#)$Id$
- *
- * Copyright 2006-2008 Makoto YUI
+ * Copyright (c) 2006-2018 Makoto Yui
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
- * Contributors:
- *     Makoto YUI - initial implementation
  */
 package btree4j.indexer;
 
-import java.util.ArrayList;
-
 import btree4j.Value;
 import btree4j.indexer.BasicIndexQuery.IndexConditionSW;
+import btree4j.utils.collections.IntStack;
+import btree4j.utils.io.FastMultiByteArrayOutputStream;
+import btree4j.utils.lang.ArrayUtils;
+import btree4j.utils.lang.StringUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
 
 public final class ByteLikeIndexQuery extends IndexConditionSW {
 
@@ -33,10 +33,6 @@ public final class ByteLikeIndexQuery extends IndexConditionSW {
 
     private byte[][] _patterns;
     private int[] _types;
-
-    public ByteLikeIndexQuery(Value prefix, byte[] suffix) {
-        this(prefix, suffix, RevPathCoder.PERCENT_CODE);
-    }
 
     public ByteLikeIndexQuery(Value prefix, byte[] suffix, byte any) {
         super(prefix);
@@ -50,31 +46,34 @@ public final class ByteLikeIndexQuery extends IndexConditionSW {
     private void initPattern(byte[] p) {
         final IntStack typeStack = new IntStack(12);
         final ArrayList<byte[]> patternStack = new ArrayList<byte[]>();
-        final FastMultiByteArrayOutputStream pending = new FastMultiByteArrayOutputStream(32);
-        final int ptnlen = p.length;
-        for (int i = 0; i < ptnlen; i++) {
-            byte c = p[i];
-            if (c == anyPattern) {
-                if (!typeStack.isEmpty()) {
-                    int lastType = typeStack.peek();
-                    if (lastType == anyPattern) {
-                        continue;
+        try (FastMultiByteArrayOutputStream pending = new FastMultiByteArrayOutputStream(32)) {
+            final int ptnlen = p.length;
+            for (int i = 0; i < ptnlen; i++) {
+                byte c = p[i];
+                if (c == anyPattern) {
+                    if (!typeStack.isEmpty()) {
+                        int lastType = typeStack.peek();
+                        if (lastType == anyPattern) {
+                            continue;
+                        }
                     }
+                    if (pending.size() > 0) {
+                        typeStack.push(MATCH);
+                        patternStack.add(pending.toByteArray());
+                        pending.reset();
+                    }
+                    typeStack.push(ANY);
+                    patternStack.add(null);
+                } else {
+                    pending.write(c);
                 }
-                if (pending.size() > 0) {
-                    typeStack.push(MATCH);
-                    patternStack.add(pending.toByteArray());
-                    pending.reset();
-                }
-                typeStack.push(ANY);
-                patternStack.add(null);
-            } else {
-                pending.write(c);
             }
-        }
-        if (pending.size() > 0) {
-            typeStack.push(MATCH);
-            patternStack.add(pending.toByteArray());
+            if (pending.size() > 0) {
+                typeStack.push(MATCH);
+                patternStack.add(pending.toByteArray());
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
         }
         this._patterns = patternStack.toArray(new byte[patternStack.size()][]);
         this._types = typeStack.toArray();

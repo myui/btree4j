@@ -1,30 +1,26 @@
 /*
- * @(#)$Id$
- *
- * Copyright 2006-2008 Makoto YUI
+ * Copyright (c) 2006-2018 Makoto Yui
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
- * Contributors:
- *     Makoto YUI - initial implementation
  */
 package btree4j.indexer;
 
-import java.io.File;
-
 import btree4j.BTree;
-import btree4j.CallbackHandler;
+import btree4j.BTreeCallback;
+import btree4j.BTreeException;
 import btree4j.Value;
+
+import java.io.File;
 
 public class BTreeIndexer implements Indexer {
 
@@ -48,13 +44,13 @@ public class BTreeIndexer implements Indexer {
 
     public BTreeIndexer(String name, File file, boolean bulkBuild) {
         this.name = name;
-        final BTree tree =
-                new BTree(file, PAGE_SIZE, bulkBuild ? INDEX_BUILD_PAGES : IN_MEMORY_PAGES, true);
+        final BTree tree = new BTree(file, PAGE_SIZE, bulkBuild ? INDEX_BUILD_PAGES
+                : IN_MEMORY_PAGES, true);
         try {
             tree.init(bulkBuild);
-        } catch (DbException e) {
-            throw new IllegalStateException(
-                "failed on initializing b+-tree: " + file.getAbsolutePath(), e);
+        } catch (BTreeException e) {
+            throw new IllegalStateException("failed on initializing b+-tree: "
+                    + file.getAbsolutePath(), e);
         }
         this.btree = tree;
     }
@@ -63,26 +59,26 @@ public class BTreeIndexer implements Indexer {
         return name;
     }
 
-    public long add(byte[] key, long value) throws DbException {
+    public long add(byte[] key, long value) throws BTreeException {
         return btree.addValue(new Value(key), value);
     }
 
-    public long remove(byte[] key) throws DbException {
+    public long remove(byte[] key) throws BTreeException {
         return btree.removeValue(new Value(key));
     }
 
-    public long remove(byte[] key, long value) throws DbException {
+    public long remove(byte[] key, long value) throws BTreeException {
         return btree.removeValue(new Value(key));
     }
 
-    public IndexMatch find(IndexQuery cond) throws DbException {
+    public IndexMatch find(IndexQuery cond) throws BTreeException {
         IndexMatch match = new IndexMatch(12);
         Callback callback = new Callback(match);
         btree.search(cond, callback);
         return match;
     }
 
-    private static final class Callback implements CallbackHandler {
+    private static final class Callback implements BTreeCallback {
 
         private final IndexMatch match;
 
@@ -101,14 +97,14 @@ public class BTreeIndexer implements Indexer {
 
     }
 
-    public void flush(boolean close) throws DbException {
+    public void flush(boolean close) throws BTreeException {
         btree.flush(true, true);
         if (close) {
             btree.close();
         }
     }
 
-    public void close() throws DbException {
+    public void close() throws BTreeException {
         btree.close();
     }
 }

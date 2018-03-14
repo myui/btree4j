@@ -1,11 +1,11 @@
 /*
- * Copyright 2006-2017 Makoto YUI
+ * Copyright (c) 2006-2018 Makoto Yui
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,12 +19,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-/**
- * 
- * <DIV lang="en"></DIV> <DIV lang="ja"></DIV>
- * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
- */
 public final class FreeList {
 
     public final static int MAX_FREE_LIST_LENGTH = 128;

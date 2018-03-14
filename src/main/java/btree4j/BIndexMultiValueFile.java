@@ -1,11 +1,11 @@
 /*
- * Copyright 2006-2017 Makoto YUI
+ * Copyright (c) 2006-2018 Makoto Yui
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,16 +15,15 @@
  */
 package btree4j;
 
+import btree4j.utils.collections.longs.LongArrayList;
+import btree4j.utils.collections.longs.LongHash.LongLRUMap;
+import btree4j.utils.lang.Primitives;
+import btree4j.utils.lang.PrintUtils;
+
 import java.io.File;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import xbird.storage.DbException;
-import xbird.util.collections.longs.LongArrayList;
-import xbird.util.collections.longs.LongHash.LongLRUMap;
-import xbird.util.lang.PrintUtils;
-import xbird.util.primitive.Primitives;
 
 public final class BIndexMultiValueFile extends BIndexFile {
     private static final Log LOG = LogFactory.getLog(BIndexMultiValueFile.class);
@@ -44,7 +43,7 @@ public final class BIndexMultiValueFile extends BIndexFile {
     }
 
     @Override
-    public synchronized long addValue(final Value key, final Value value) throws DbException {
+    public synchronized long addValue(final Value key, final Value value) throws BTreeException {
         final long valuePtr = storeValue(value);
         final long ptr = findValue(key);
         if (ptr != KEY_NOT_FOUND) {// key found
@@ -74,15 +73,15 @@ public final class BIndexMultiValueFile extends BIndexFile {
     }
 
     @Override
-    protected CallbackHandler getHandler(CallbackHandler handler) {
+    protected BTreeCallback getHandler(BTreeCallback handler) {
         return new BIndexMultiValueCallback(handler);
     }
 
-    private final class BIndexMultiValueCallback implements CallbackHandler {
+    private final class BIndexMultiValueCallback implements BTreeCallback {
 
-        final CallbackHandler handler;
+        final BTreeCallback handler;
 
-        public BIndexMultiValueCallback(CallbackHandler handler) {
+        public BIndexMultiValueCallback(BTreeCallback handler) {
             this.handler = handler;
         }
 
@@ -94,7 +93,7 @@ public final class BIndexMultiValueFile extends BIndexFile {
                     final byte[] ptrTuple;
                     try {
                         ptrTuple = retrieveTuple(pointer);
-                    } catch (DbException e) {
+                    } catch (BTreeException e) {
                         throw new IllegalStateException(e);
                     }
                     ptrs = MultiPtrs.readFrom(ptrTuple);
@@ -108,7 +107,7 @@ public final class BIndexMultiValueFile extends BIndexFile {
                 final byte[] value;
                 try {
                     value = retrieveTuple(lptr);
-                } catch (DbException e) {
+                } catch (BTreeException e) {
                     LOG.error(PrintUtils.prettyPrintStackTrace(e));
                     throw new IllegalStateException(e);
                 }

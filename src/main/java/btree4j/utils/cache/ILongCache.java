@@ -13,25 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package btree4j.indexer;
+package btree4j.utils.cache;
 
-import btree4j.Value;
+import java.io.Serializable;
 
-public interface IndexQuery {
+public interface ILongCache<V> extends Serializable {
 
-    public int getOperator();
+    public V get(long key);
 
-    public Value[] getOperands();
+    public V put(long key, V value);
 
-    public Value getOperand(int index);
+    public V putIfAbsent(final long key, final V value);
 
-    /**
-     * testValue tests the specified value for validity against this IndexQuery. The helper classes
-     * in org.apache.xindice.core.indexer.helpers should be used for optimized performance.
-     *
-     * @param value The Value to compare
-     * @return Whether or not the value matches
-     */
-    public boolean testValue(Value value);
+    public ICacheEntry<Long, V> fixEntry(long key);
+
+    public void clear();
 
 }

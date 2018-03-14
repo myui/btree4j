@@ -1,29 +1,27 @@
 /*
- * @(#)$Id$
- *
- * Copyright 2006-2008 Makoto YUI
+ * Copyright (c) 2006-2018 Makoto Yui
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
- * Contributors:
- *     Makoto YUI - initial implementation
  */
 package btree4j.indexer;
 
-import java.util.ArrayList;
-
 import btree4j.Value;
 import btree4j.indexer.BasicIndexQuery.IndexConditionSW;
+import btree4j.utils.collections.IntStack;
+import btree4j.utils.lang.Primitives;
+import btree4j.utils.lang.StringUtils;
+
+import java.util.ArrayList;
 
 public final class LikeIndexQuery extends IndexConditionSW {
 
@@ -41,7 +39,7 @@ public final class LikeIndexQuery extends IndexConditionSW {
 
     public LikeIndexQuery(Value prefix, String suffix, char escape) {
         super(prefix);
-        if(suffix == null) {
+        if (suffix == null) {
             throw new IllegalArgumentException("Illegal null suffix");
         }
         this.escapeChar = escape;
@@ -53,25 +51,25 @@ public final class LikeIndexQuery extends IndexConditionSW {
         final IntStack typeStack = new IntStack(12);
         final ArrayList<char[]> patternStack = new ArrayList<char[]>();
         final StringBuilder pending = new StringBuilder(64);
-        for(int i = 0; i < ptnlen; i++) {
+        for (int i = 0; i < ptnlen; i++) {
             char c = p.charAt(i);
-            if(c == escapeChar) {
-                if(i >= (ptnlen - 1)) {
+            if (c == escapeChar) {
+                if (i >= (ptnlen - 1)) {
                     throw new IllegalArgumentException("Illegal like expression: " + p);
                 }
                 c = p.charAt(++i);
-                if(c != '%' && c != '_' && c != escapeChar) {
+                if (c != '%' && c != '_' && c != escapeChar) {
                     throw new IllegalArgumentException("Illegal like expression: " + p);
                 }
                 pending.append(c);
-            } else if(c == '%') {
-                if(!typeStack.isEmpty()) {
+            } else if (c == '%') {
+                if (!typeStack.isEmpty()) {
                     int lastType = typeStack.peek();
-                    if(lastType == '%') {
+                    if (lastType == '%') {
                         continue;
                     }
                 }
-                if(pending.length() > 0) {
+                if (pending.length() > 0) {
                     String s = pending.toString();
                     typeStack.push(MATCH);
                     patternStack.add(StringUtils.getChars(s));
@@ -79,8 +77,8 @@ public final class LikeIndexQuery extends IndexConditionSW {
                 }
                 typeStack.push(ANY);
                 patternStack.add(null);
-            } else if(c == '_') {
-                if(pending.length() > 0) {
+            } else if (c == '_') {
+                if (pending.length() > 0) {
                     String s = pending.toString();
                     typeStack.push(MATCH);
                     patternStack.add(StringUtils.getChars(s));
@@ -92,7 +90,7 @@ public final class LikeIndexQuery extends IndexConditionSW {
                 pending.append(c);
             }
         }
-        if(pending.length() > 0) {
+        if (pending.length() > 0) {
             String s = pending.toString();
             typeStack.push(MATCH);
             patternStack.add(StringUtils.getChars(s));
@@ -104,10 +102,10 @@ public final class LikeIndexQuery extends IndexConditionSW {
     @Override
     public boolean testValue(Value value) {
         boolean sw = value.startsWith(_operands[0]);
-        if(!sw) {
+        if (!sw) {
             return false;
         }
-        if(_types.length == 0) {
+        if (_types.length == 0) {
             return true;
         }
         byte[] data = value.getData();
@@ -117,36 +115,37 @@ public final class LikeIndexQuery extends IndexConditionSW {
         return match(target, _patterns, _types, 0, 0);
     }
 
-    private static boolean match(char[] target, char[][] verifyPatterns, int[] verifyType, int ti, int pi) {
+    private static boolean match(char[] target, char[][] verifyPatterns, int[] verifyType, int ti,
+            int pi) {
         final int round = verifyType.length;
         final int tlimit = target.length;
-        for(; pi < round; pi++) {
+        for (; pi < round; pi++) {
             final int type = verifyType[pi];
             final char[] ptn = verifyPatterns[pi];
-            switch(type) {
+            switch (type) {
                 case MATCH:
                     final int ptnlen = ptn.length;
-                    if((ti + ptnlen) > tlimit) {
+                    if ((ti + ptnlen) > tlimit) {
                         return false;
                     }
-                    for(int j = 0; j < ptnlen; j++) {
-                        if(target[ti++] != ptn[j]) {
+                    for (int j = 0; j < ptnlen; j++) {
+                        if (target[ti++] != ptn[j]) {
                             return false;
                         }
                     }
                     break;
                 case ONE:
-                    if(ti++ >= tlimit) {
+                    if (ti++ >= tlimit) {
                         return false;
                     }
                     break;
                 case ANY:
-                    if(++pi >= round) {
+                    if (++pi >= round) {
                         return true;
                     }
                     // there are more rounds
-                    for(; ti < tlimit; ti++) {// recursive trick
-                        if(match(target, verifyPatterns, verifyType, ti, pi)) {
+                    for (; ti < tlimit; ti++) {// recursive trick
+                        if (match(target, verifyPatterns, verifyType, ti, pi)) {
                             return true;
                         }
                         // backtrack to ANY
@@ -165,13 +164,13 @@ public final class LikeIndexQuery extends IndexConditionSW {
         buf.append("prefix: ");
         buf.append(_operands[0].toString());
         buf.append(", suffix: ");
-        for(int i = 0; i < _types.length; i++) {
+        for (int i = 0; i < _types.length; i++) {
             int type = _types[i];
-            if(type == ANY) {
+            if (type == ANY) {
                 buf.append('%');
-            } else if(type == ONE) {
+            } else if (type == ONE) {
                 buf.append('_');
-            } else if(type == MATCH) {
+            } else if (type == MATCH) {
                 char[] pattern = _patterns[i];
                 buf.append(pattern);
             } else {

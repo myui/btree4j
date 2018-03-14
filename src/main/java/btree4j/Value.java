@@ -1,12 +1,11 @@
 /*
- * Copyright 2006-2017 Makoto YUI
- * Copyright 1999-2004 The Apache Software Foundation.
+ * Copyright (c) 2006-2018 Makoto Yui
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +15,11 @@
  */
 package btree4j;
 
+import btree4j.utils.io.FastByteArrayInputStream;
+import btree4j.utils.lang.HashUtils;
+import btree4j.utils.lang.Primitives;
+import btree4j.utils.lang.StringUtils;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,19 +27,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.OutputStream;
 
-import xbird.util.hashes.HashUtils;
-import xbird.util.io.FastByteArrayInputStream;
-import xbird.util.primitive.Primitives;
-import xbird.util.string.StringUtils;
-
-/**
- * 
- * <DIV lang="en"></DIV>
- * <DIV lang="ja"></DIV>
- * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
- */
-public class Value implements Comparable, Cloneable, Externalizable {
+public class Value implements Comparable<Value>, Cloneable, Externalizable {
     private static final long serialVersionUID = -8649821046511401335L;
 
     private int _hash = -1;
@@ -61,7 +53,7 @@ public class Value implements Comparable, Cloneable, Externalizable {
     }
 
     public Value(byte[] data, int pos, int len) {
-        if(data == null) {
+        if (data == null) {
             throw new IllegalArgumentException();
         }
         this._data = data;
@@ -77,7 +69,7 @@ public class Value implements Comparable, Cloneable, Externalizable {
      * getData retrieves the data being stored by the Value as a byte array.
      */
     public byte[] getData() {
-        if(_len != _data.length) {
+        if (_len != _data.length) {
             byte[] b = new byte[_len];
             System.arraycopy(_data, _pos, b, 0, _len);
             return b;
@@ -123,24 +115,16 @@ public class Value implements Comparable, Cloneable, Externalizable {
         System.arraycopy(_data, _pos, toValue, toPos, len);
     }
 
-    public int compareTo(Object obj) {
-        assert (obj != null);
-        if(obj instanceof Value) {
-            return compareTo((Value) obj);
-        } else {
-            return compareTo(new Value(obj.toString().getBytes()));
-        }
-    }
-
+    @Override
     public int compareTo(Value value) {
         byte[] ddata = value._data;
         int dpos = value._pos;
         int dlen = value._len;
         int stop = _len > dlen ? dlen : _len;
-        for(int i = 0; i < stop; i++) {
+        for (int i = 0; i < stop; i++) {
             byte b1 = _data[_pos + i];
             byte b2 = ddata[dpos + i];
-            if(b1 == b2) {
+            if (b1 == b2) {
                 continue;
             } else {
                 int s1 = (b1 >>> 0);
@@ -148,7 +132,7 @@ public class Value implements Comparable, Cloneable, Externalizable {
                 return s1 > s2 ? (i + 1) : -(i + 1);
             }
         }
-        if(_len == dlen) {
+        if (_len == dlen) {
             return 0;
         } else {
             return _len > dlen ? stop + 1 : -(stop + 1);
@@ -161,10 +145,10 @@ public class Value implements Comparable, Cloneable, Externalizable {
 
     @Override
     public boolean equals(Object obj) {
-        if(this == obj) {
+        if (this == obj) {
             return true;
         }
-        if(obj instanceof Value) {
+        if (obj instanceof Value) {
             return equals((Value) obj);
         } else {
             return false;
@@ -173,7 +157,7 @@ public class Value implements Comparable, Cloneable, Externalizable {
 
     @Override
     public int hashCode() {
-        if(_hash != -1) {
+        if (_hash != -1) {
             return _hash;
         }
         int h = HashUtils.hashCode(_data, _pos, _len);
@@ -189,13 +173,13 @@ public class Value implements Comparable, Cloneable, Externalizable {
 
     public final boolean startsWith(Value value) {
         int vlen = value.getLength();
-        if(_len < vlen) {
+        if (_len < vlen) {
             return false;
         }
         byte[] ddata = value.getData();
         int dpos = value.getPosition();
-        for(int i = 0; i < vlen; i++) {
-            if(_data[i + _pos] != ddata[i + dpos]) {
+        for (int i = 0; i < vlen; i++) {
+            if (_data[i + _pos] != ddata[i + dpos]) {
                 return false;
             }
         }

@@ -13,25 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package btree4j.indexer;
+package btree4j.utils.cache;
 
-import btree4j.Value;
+public interface Cleaner<K, V> {
 
-public interface IndexQuery {
-
-    public int getOperator();
-
-    public Value[] getOperands();
-
-    public Value getOperand(int index);
-
-    /**
-     * testValue tests the specified value for validity against this IndexQuery. The helper classes
-     * in org.apache.xindice.core.indexer.helpers should be used for optimized performance.
-     *
-     * @param value The Value to compare
-     * @return Whether or not the value matches
-     */
-    public boolean testValue(Value value);
+    public void cleanup(K key, V value);
 
 }

@@ -1,5 +1,19 @@
 /*
- * Copyright 2006-2017 Makoto YUI
+ * Copyright (c) 2006-2018 Makoto Yui
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/*
  * Copyright 1999-2004 The Apache Software Foundation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +30,16 @@
  */
 package btree4j;
 
+import btree4j.indexer.BasicIndexQuery;
+import btree4j.indexer.IndexQuery;
+import btree4j.utils.codec.VariableByteCodec;
+import btree4j.utils.collections.longs.LongHash.BucketEntry;
+import btree4j.utils.collections.longs.LongHash.Cleaner;
+import btree4j.utils.collections.longs.PurgeOptObservableLongLRUMap;
+import btree4j.utils.io.FastMultiByteArrayOutputStream;
+import btree4j.utils.lang.ArrayUtils;
+import btree4j.utils.lang.Primitives;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -29,18 +53,6 @@ import javax.annotation.CheckForNull;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import btree4j.indexer.IndexQuery;
-import xbird.config.Settings;
-import xbird.storage.DbException;
-import xbird.storage.indexer.BasicIndexQuery;
-import xbird.util.codec.VariableByteCodec;
-import xbird.util.collections.longs.PurgeOptObservableLongLRUMap;
-import xbird.util.collections.longs.LongHash.BucketEntry;
-import xbird.util.collections.longs.LongHash.Cleaner;
-import xbird.util.io.FastMultiByteArrayOutputStream;
-import xbird.util.lang.ArrayUtils;
-import xbird.util.primitive.Primitives;
-
 /**
  * BTree represents a Variable Magnitude Simple-Prefix B+Tree File.
  */
@@ -51,10 +63,10 @@ public class BTree extends Paged {
     public static final int DEFAULT_IN_MEMORY_NODES;
     private static final int BTREE_NODECACHE_PURGE_UNIT;
     static {
-        DEFAULT_IN_MEMORY_NODES =
-                Primitives.parseInt(Settings.get("xbird.storage.index.btree.nodecache_size"), 4096); // 16m
+        DEFAULT_IN_MEMORY_NODES = Primitives.parseInt(Settings.get("btree4j.btree.nodecache_size"),
+            4096); // 16m
         BTREE_NODECACHE_PURGE_UNIT = Primitives.parseInt(
-            Settings.get("xbird.storage.index.bfile.nodecache_purgeunit"), 8); // 32k
+            Settings.get("btree4j.bfile.nodecache_purgeunit"), 8); // 32k
     }
 
     public static final int KEY_NOT_FOUND = -1;
@@ -100,12 +112,12 @@ public class BTree extends Paged {
         this.numNodeCaches = caches;
     }
 
-    public void init(boolean bulkload) throws DbException {
+    public void init(boolean bulkload) throws BTreeException {
         if (!exists()) {
             boolean created = create(false);
             if (!created) {
-                throw new IllegalStateException(
-                    "create B+Tree file failed: " + _file.getAbsolutePath());
+                throw new IllegalStateException("create B+Tree file failed: "
+                        + _file.getAbsolutePath());
             }
         } else {
             open();
@@ -115,8 +127,8 @@ public class BTree extends Paged {
     public void setBulkloading(boolean enable, float nodeCachePurgePerc) {
         if (enable) {
             if (nodeCachePurgePerc <= 0 || nodeCachePurgePerc > 1) {
-                throw new IllegalArgumentException(
-                    "nodeCachePurgePerc is illegal as percentage: " + nodeCachePurgePerc);
+                throw new IllegalArgumentException("nodeCachePurgePerc is illegal as percentage: "
+                        + nodeCachePurgePerc);
             }
             int units = Math.max((int) (numNodeCaches * nodeCachePurgePerc), numNodeCaches);
             _cache.setPurgeUnits(units);
@@ -137,7 +149,7 @@ public class BTree extends Paged {
                 node.write();
             } catch (IOException e) {
                 throw new IllegalStateException(e);
-            } catch (DbException e) {
+            } catch (BTreeException e) {
                 throw new IllegalStateException(e);
             }
         }
@@ -145,7 +157,7 @@ public class BTree extends Paged {
     }
 
     @Override
-    public boolean open() throws DbException {
+    public boolean open() throws BTreeException {
         if (super.open()) {
             long p = _fileHeader.getRootPage();
             this._rootInfo = new BTreeRootInfo(p);
@@ -157,7 +169,7 @@ public class BTree extends Paged {
     }
 
     @Override
-    public boolean create(boolean close) throws DbException {
+    public boolean create(boolean close) throws BTreeException {
         if (super.create(false)) {
             // Don't call this.open() as it will try to read rootNode from the disk
             super.open();
@@ -170,7 +182,7 @@ public class BTree extends Paged {
             try {
                 _rootNode.write();
             } catch (IOException e) {
-                throw new DbException(e);
+                throw new BTreeException(e);
             }
             synchronized (_cache) {
                 _cache.put(_rootNode.page.getPageNum(), _rootNode);
@@ -196,11 +208,11 @@ public class BTree extends Paged {
      * @param pointer The pointer to associate with it
      * @return The previous value for the pointer (or -1)
      */
-    public synchronized long addValue(Value value, long pointer) throws DbException {
+    public synchronized long addValue(Value value, long pointer) throws BTreeException {
         try {
             return _rootNode.addValue(value, pointer);
         } catch (IOException e) {
-            throw new DbException(e);
+            throw new BTreeException(e);
         }
     }
 
@@ -210,19 +222,19 @@ public class BTree extends Paged {
      * @param value The Value to remove
      * @return The pointer that was associated with it
      */
-    public synchronized long removeValue(Value value) throws DbException {
+    public synchronized long removeValue(Value value) throws BTreeException {
         try {
             return _rootNode.removeValue(value);
         } catch (IOException e) {
-            throw new DbException(e);
+            throw new BTreeException(e);
         }
     }
 
-    public synchronized long[] removeValue(Value value, long pointer) throws DbException {
+    public synchronized long[] removeValue(Value value, long pointer) throws BTreeException {
         try {
             return _rootNode.removeValue(value, pointer);
         } catch (IOException e) {
-            throw new DbException(e);
+            throw new BTreeException(e);
         }
     }
 
@@ -232,12 +244,12 @@ public class BTree extends Paged {
      * @param value The Value to find
      * @return The pointer that was associated with it
      */
-    public synchronized long findValue(Value value) throws DbException {
+    public synchronized long findValue(Value value) throws BTreeException {
         return _rootNode.findValue(value);
     }
 
     public enum SearchType {
-                            LEFT_MOST, LEFT /* normal */, RIGHT, RIGHT_MOST
+        LEFT_MOST, LEFT /* normal */, RIGHT, RIGHT_MOST
     }
 
     /**
@@ -247,7 +259,7 @@ public class BTree extends Paged {
      * @param query The IndexQuery to use
      * @param callback The callback instance
      */
-    public synchronized void search(IndexQuery query, CallbackHandler callback) throws DbException {
+    public synchronized void search(IndexQuery query, BTreeCallback callback) throws BTreeException {
         if (query == null) {
             throw new IllegalArgumentException();
         }
@@ -314,16 +326,15 @@ public class BTree extends Paged {
                 }
             }
         } catch (IOException e) {
-            throw new DbException(e);
+            throw new BTreeException(e);
         }
     }
 
     private final void scanRange(BTreeNode left, BTreeNode right, IndexQuery query,
-            CallbackHandler callback) throws DbException {
+            BTreeCallback callback) throws BTreeException {
         final long rightmostPageNum = right.page.getPageNum();
         if (LOG.isDebugEnabled()) {
-            LOG.debug(
-                "scan range [" + left.page.getPageNum() + ", " + rightmostPageNum + "] start");
+            LOG.debug("scan range [" + left.page.getPageNum() + ", " + rightmostPageNum + "] start");
         }
         BTreeNode cur = left;
         int scaned = 0;
@@ -350,10 +361,12 @@ public class BTree extends Paged {
         }
     }
 
+    @Override
     protected FileHeader createFileHeader(int pageSize) {
         return new BTreeFileHeader(pageSize);
     }
 
+    @Override
     protected PageHeader createPageHeader() {
         return new BTreePageHeader();
     }
@@ -369,7 +382,7 @@ public class BTree extends Paged {
      * @param root The root object to retrieve with
      * @return The root node
      */
-    protected final BTreeNode getRootNode(BTreeRootInfo root) throws DbException {
+    protected final BTreeNode getRootNode(BTreeRootInfo root) throws BTreeException {
         if (root.page == _rootInfo.page) {
             return _rootNode;
         } else {
@@ -378,7 +391,7 @@ public class BTree extends Paged {
     }
 
     private final BTreeNode getBTreeNode(BTreeRootInfo root, long page, BTreeNode parent)
-            throws DbException {
+            throws BTreeException {
         BTreeNode node;
         synchronized (_cache) {
             node = _cache.get(page);
@@ -387,7 +400,7 @@ public class BTree extends Paged {
                 try {
                     node.read();
                 } catch (IOException e) {
-                    throw new DbException("failed to read page#" + page, e);
+                    throw new BTreeException("failed to read page#" + page, e);
                 }
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("read node page#" + page + ", keys: " + node.keys.length);
@@ -402,7 +415,7 @@ public class BTree extends Paged {
         return node;
     }
 
-    private final BTreeNode getBTreeNode(BTreeRootInfo root, long page) throws DbException {
+    private final BTreeNode getBTreeNode(BTreeRootInfo root, long page) throws BTreeException {
         BTreeNode node;
         synchronized (_cache) {
             node = _cache.get(page);
@@ -411,7 +424,7 @@ public class BTree extends Paged {
                 try {
                     node.read();
                 } catch (IOException e) {
-                    throw new DbException("failed to read page#" + page, e);
+                    throw new BTreeException("failed to read page#" + page, e);
                 }
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("read node page#" + page + ", keys: " + node.keys.length);
@@ -423,7 +436,7 @@ public class BTree extends Paged {
     }
 
     private final BTreeNode createBTreeNode(BTreeRootInfo root, byte status,
-            @CheckForNull BTreeNode parent) throws DbException {
+            @CheckForNull BTreeNode parent) throws BTreeException {
         if (parent == null) {
             throw new IllegalArgumentException();
         }
@@ -437,7 +450,7 @@ public class BTree extends Paged {
         return node;
     }
 
-    public synchronized void flush(boolean purge, boolean clear) throws DbException {
+    public synchronized void flush(boolean purge, boolean clear) throws BTreeException {
         if (purge) {
             try {
                 for (BucketEntry<BTreeNode> e : _cache) {
@@ -447,7 +460,7 @@ public class BTree extends Paged {
                     }
                 }
             } catch (IOException ioe) {
-                throw new DbException(ioe);
+                throw new BTreeException(ioe);
             }
         }
         if (clear) {
@@ -512,7 +525,7 @@ public class BTree extends Paged {
             if (page != Paged.NO_PAGE) {
                 try {
                     parentCache = getBTreeNode(_rootInfo, page);
-                } catch (DbException e) {
+                } catch (BTreeException e) {
                     throw new IllegalStateException("failed to get parent page #" + page, e);
                 }
                 return parentCache;
@@ -529,7 +542,7 @@ public class BTree extends Paged {
             }
         }
 
-        long addValue(Value value, long pointer) throws IOException, DbException {
+        long addValue(Value value, long pointer) throws IOException, BTreeException {
             if (value == null) {
                 throw new IllegalArgumentException("Can't add a null Value");
             }
@@ -631,7 +644,7 @@ public class BTree extends Paged {
         }
 
         /** @return pointer of left-most matched item */
-        long removeValue(Value searchKey) throws IOException, DbException {
+        long removeValue(Value searchKey) throws IOException, BTreeException {
             int leftIdx = searchLeftmostKey(keys, searchKey, keys.length);
             switch (ph.getStatus()) {
                 case BRANCH:
@@ -647,14 +660,14 @@ public class BTree extends Paged {
                         return oldPtr;
                     }
                 default:
-                    throw new BTreeCorruptException(
-                        "Invalid page type '" + ph.getStatus() + "' in removeValue");
+                    throw new BTreeCorruptException("Invalid page type '" + ph.getStatus()
+                            + "' in removeValue");
             }
         }
 
         /** @return pointer of matched items */
         @Deprecated
-        long[] removeValue(Value searchKey, long pointer) throws IOException, DbException {
+        long[] removeValue(Value searchKey, long pointer) throws IOException, BTreeException {
             int leftIdx = searchLeftmostKey(keys, searchKey, keys.length);
             int rightIdx = isDuplicateAllowed() ? searchRightmostKey(keys, searchKey, keys.length)
                     : leftIdx;
@@ -683,13 +696,13 @@ public class BTree extends Paged {
                         if (founds == 0) {
                             return new long[0];
                         }
-                        return (founds == matched.length) ? matched
-                                : ArrayUtils.copyOfRange(matched, 0, founds);
+                        return (founds == matched.length) ? matched : ArrayUtils.copyOfRange(
+                            matched, 0, founds);
                     }
                 }
                 default:
-                    throw new BTreeCorruptException(
-                        "Invalid page type '" + ph.getStatus() + "' in removeValue");
+                    throw new BTreeCorruptException("Invalid page type '" + ph.getStatus()
+                            + "' in removeValue");
             }
         }
 
@@ -697,7 +710,7 @@ public class BTree extends Paged {
          * Internal (to the BTreeNode) method. Because this method is called only by BTreeNode
          * itself, no synchronization done inside of this method.
          */
-        private BTreeNode getChildNode(final int idx) throws DbException {
+        private BTreeNode getChildNode(final int idx) throws BTreeException {
             if (ph.getStatus() == BRANCH && idx >= 0 && idx < ptrs.length) {
                 return getBTreeNode(root, ptrs[idx], this);
             }
@@ -728,7 +741,7 @@ public class BTree extends Paged {
         /**
          * Internal to the BTreeNode method
          */
-        private void split() throws IOException, DbException {
+        private void split() throws IOException, BTreeException {
             final Value[] leftVals;
             final Value[] rightVals;
             final long[] leftPtrs;
@@ -831,7 +844,7 @@ public class BTree extends Paged {
         }
 
         /** Set the parent-link in all child nodes to point to this node */
-        private void setAsParent() throws DbException {
+        private void setAsParent() throws BTreeException {
             if (ph.getStatus() == BRANCH) {
                 for (final long ptr : ptrs) {
                     BTreeNode child = getBTreeNode(_rootInfo, ptr, this);
@@ -842,7 +855,7 @@ public class BTree extends Paged {
 
         /** Set leaves linked */
         private void setLeavesLinked(final BTreeNode left, final BTreeNode right)
-                throws DbException {
+                throws BTreeException {
             final long leftPageNum = left.page.getPageNum();
             final long rightPageNum = right.page.getPageNum();
             final long origNext = left._next;
@@ -857,7 +870,7 @@ public class BTree extends Paged {
         }
 
         private void promoteValue(final Value key, final long leftPtr, final long rightPtr)
-                throws IOException, DbException {
+                throws IOException, BTreeException {
             final int leftIdx = searchRightmostKey(keys, key, keys.length);
             int insertPoint = (leftIdx < 0) ? -(leftIdx + 1) : leftIdx + 1;
             boolean found = false;
@@ -872,9 +885,9 @@ public class BTree extends Paged {
                 }
             }
             if (!found) {
-                throw new IllegalStateException(
-                    "page#" + page.getPageNum() + ", insertPoint: " + insertPoint + ", leftPtr: "
-                            + leftPtr + ", ptrs: " + Arrays.toString(ptrs));
+                throw new IllegalStateException("page#" + page.getPageNum() + ", insertPoint: "
+                        + insertPoint + ", leftPtr: " + leftPtr + ", ptrs: "
+                        + Arrays.toString(ptrs));
             }
             set(ArrayUtils.<Value>insert(keys, insertPoint, key),
                 ArrayUtils.insert(ptrs, insertPoint + 1, rightPtr));
@@ -943,7 +956,7 @@ public class BTree extends Paged {
         /**
          * Reads node only if it is not loaded yet
          */
-        private void read() throws IOException, DbException {
+        private void read() throws IOException, BTreeException {
             if (!this.loaded) {
                 Value v = readValue(page);
                 DataInputStream in = new DataInputStream(v.getInputStream());
@@ -995,7 +1008,7 @@ public class BTree extends Paged {
             }
         }
 
-        private void write() throws IOException, DbException {
+        private void write() throws IOException, BTreeException {
             if (!dirty) {
                 return;
             }
@@ -1003,8 +1016,8 @@ public class BTree extends Paged {
                 LOG.trace((ph.getStatus() == LEAF ? "Leaf " : "Branch ") + "Node#"
                         + page.getPageNum() + " - " + Arrays.toString(keys));
             }
-            final FastMultiByteArrayOutputStream bos =
-                    new FastMultiByteArrayOutputStream(_fileHeader.getWorkSize());
+            final FastMultiByteArrayOutputStream bos = new FastMultiByteArrayOutputStream(
+                _fileHeader.getWorkSize());
             final DataOutputStream os = new DataOutputStream(bos);
 
             // write out the prefix
@@ -1095,9 +1108,9 @@ public class BTree extends Paged {
         }
 
         /** find lest-most value which matches to the key */
-        long findValue(Value serarchKey) throws DbException {
+        long findValue(Value serarchKey) throws BTreeException {
             if (serarchKey == null) {
-                throw new DbException("Can't search on null Value");
+                throw new BTreeException("Can't search on null Value");
             }
             int idx = searchLeftmostKey(keys, serarchKey, keys.length);
             switch (ph.getStatus()) {
@@ -1126,8 +1139,8 @@ public class BTree extends Paged {
                             final int lmIdx = leftmostNode.searchLeftmostKey(lmKeys, serarchKey,
                                 lmKeys.length);
                             if (lmIdx < 0) {
-                                throw new BTreeCorruptException(
-                                    "Duplicated key was not found: " + serarchKey);
+                                throw new BTreeCorruptException("Duplicated key was not found: "
+                                        + serarchKey);
                             }
                             final long[] leftmostPtrs = leftmostNode.ptrs;
                             return leftmostPtrs[lmIdx];
@@ -1136,15 +1149,15 @@ public class BTree extends Paged {
                         }
                     }
                 default:
-                    throw new BTreeCorruptException(
-                        "Invalid page type '" + ph.getStatus() + "' in findValue");
+                    throw new BTreeCorruptException("Invalid page type '" + ph.getStatus()
+                            + "' in findValue");
             }
         }
 
         /**
          * Scan the leaf node. Note that keys might be shortest-possible value.
          */
-        void scanLeaf(IndexQuery query, CallbackHandler callback, boolean edge) {
+        void scanLeaf(IndexQuery query, BTreeCallback callback, boolean edge) {
             assert (ph.getStatus() == LEAF) : ph.getStatus();
             Value[] conds = query.getOperands();
             switch (query.getOperator()) {
@@ -1158,8 +1171,8 @@ public class BTree extends Paged {
                     final int leftIdx = searchLeftmostKey(keys, conds[0], keys.length);
                     if (leftIdx >= 0) {
                         assert (isDuplicateAllowed());
-                        final int rightIdx =
-                                searchRightmostKey(keys, conds[conds.length - 1], keys.length);
+                        final int rightIdx = searchRightmostKey(keys, conds[conds.length - 1],
+                            keys.length);
                         for (int i = leftIdx; i <= rightIdx; i++) {
                             callback.indexInfo(keys[i], ptrs[i]);
                         }
@@ -1168,9 +1181,8 @@ public class BTree extends Paged {
                 }
                 case BasicIndexQuery.NE: {
                     int leftIdx = searchLeftmostKey(keys, conds[0], keys.length);
-                    int rightIdx = isDuplicateAllowed()
-                            ? searchRightmostKey(keys, conds[conds.length - 1], keys.length)
-                            : leftIdx;
+                    int rightIdx = isDuplicateAllowed() ? searchRightmostKey(keys,
+                        conds[conds.length - 1], keys.length) : leftIdx;
                     for (int i = 0; i < ptrs.length; i++) {
                         if (i < leftIdx || i > rightIdx) {
                             callback.indexInfo(keys[i], ptrs[i]);
@@ -1282,7 +1294,7 @@ public class BTree extends Paged {
             }
         }
 
-        BTreeNode getLeafNode(SearchType searchType, Value key) throws IOException, DbException {
+        BTreeNode getLeafNode(SearchType searchType, Value key) throws IOException, BTreeException {
             final byte nodeType = ph.getStatus();
             switch (nodeType) {
                 case BRANCH:

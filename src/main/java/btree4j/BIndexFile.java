@@ -1,11 +1,11 @@
 /*
- * Copyright 2006-2017 Makoto YUI
+ * Copyright (c) 2006-2018 Makoto Yui
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 package btree4j;
+
+import btree4j.FreeList.FreeSpace;
+import btree4j.indexer.IndexQuery;
+import btree4j.utils.collections.LRUMap;
+import btree4j.utils.collections.longs.LongHash.BucketEntry;
+import btree4j.utils.collections.longs.LongHash.Cleaner;
+import btree4j.utils.collections.longs.PurgeOptObservableLongLRUMap;
+import btree4j.utils.lang.Primitives;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -24,12 +32,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import btree4j.BTree.BTreeFileHeader;
-import btree4j.BTree.BTreePageHeader;
-import btree4j.FreeList.FreeSpace;
-import btree4j.Paged.Page;
-import btree4j.indexer.IndexQuery;
-
 public class BIndexFile extends BTree {
 
     private static final byte DATA_RECORD = 10;
@@ -37,10 +39,9 @@ public class BIndexFile extends BTree {
     public static final int DATA_CACHE_SIZE;
     public static final int DATA_CACHE_PURGE_UNIT;
     static {
-        DATA_CACHE_SIZE =
-                Primitives.parseInt(Settings.get("xbird.storage.index.bfile.datacache_size"), 2048); // 4k * 2048 = 8m
+        DATA_CACHE_SIZE = Primitives.parseInt(Settings.get("btree4j.bfile.datacache_size"), 2048); // 4k * 2048 = 8m
         DATA_CACHE_PURGE_UNIT = Primitives.parseInt(
-            Settings.get("xbird.storage.index.bfile.datacache_purgeunit"), 16); // 4k * 16 = 64k
+            Settings.get("btree4j.bfile.datacache_purgeunit"), 16); // 4k * 16 = 64k
     }
 
     private final PurgeOptObservableLongLRUMap<DataPage> dataCache;
@@ -72,8 +73,8 @@ public class BIndexFile extends BTree {
         setBulkloading(enable, nodeCachePurgePerc);
         if (enable) {
             if (dataCachePurgePerc <= 0 || dataCachePurgePerc > 1) {
-                throw new IllegalArgumentException(
-                    "dataCachePurgePerc is illegal as percentage: " + nodeCachePurgePerc);
+                throw new IllegalArgumentException("dataCachePurgePerc is illegal as percentage: "
+                        + nodeCachePurgePerc);
             }
             int units = Math.max((int) (numDataCaches * dataCachePurgePerc), numDataCaches);
             dataCache.setPurgeUnits(units);
@@ -97,11 +98,11 @@ public class BIndexFile extends BTree {
         return new BFilePageHeader();
     }
 
-    public final byte[] getValueBytes(long key) throws DbException {
+    public final byte[] getValueBytes(long key) throws BTreeException {
         return getValueBytes(new Value(key));
     }
 
-    public synchronized byte[] getValueBytes(Value key) throws DbException {
+    public synchronized byte[] getValueBytes(Value key) throws BTreeException {
         final long ptr = findValue(key);
         if (ptr == KEY_NOT_FOUND) {
             return null;
@@ -109,36 +110,36 @@ public class BIndexFile extends BTree {
         return retrieveTuple(ptr);
     }
 
-    protected synchronized final byte[] retrieveTuple(long ptr) throws DbException {
+    protected synchronized final byte[] retrieveTuple(long ptr) throws BTreeException {
         long pageNum = getPageNumFromPointer(ptr);
         DataPage dataPage = getDataPage(pageNum);
         int tidx = getTidFromPointer(ptr);
         return dataPage.get(tidx);
     }
 
-    public Value getValue(Value key) throws DbException {
+    public Value getValue(Value key) throws BTreeException {
         final byte[] tuple = getValueBytes(key);
         return new Value(tuple);
     }
 
     @Override
-    public final void search(IndexQuery query, CallbackHandler callback) throws DbException {
+    public final void search(IndexQuery query, BTreeCallback callback) throws BTreeException {
         super.search(query, getHandler(callback));
     }
 
-    protected CallbackHandler getHandler(CallbackHandler handler) {
+    protected BTreeCallback getHandler(BTreeCallback handler) {
         return new BFileCallback(handler);
     }
 
-    public final long addValue(long key, byte[] value) throws DbException {
+    public final long addValue(long key, byte[] value) throws BTreeException {
         return addValue(new Value(key), new Value(value));
     }
 
-    public final long addValue(Value key, byte[] value) throws DbException {
+    public final long addValue(Value key, byte[] value) throws BTreeException {
         return addValue(key, new Value(value));
     }
 
-    public synchronized long addValue(Value key, Value value) throws DbException {
+    public synchronized long addValue(Value key, Value value) throws BTreeException {
         long ptr = findValue(key);
         if (ptr != KEY_NOT_FOUND) {// key found
             // update the page
@@ -153,11 +154,11 @@ public class BIndexFile extends BTree {
         return ptr;
     }
 
-    public final long putValue(Value key, byte[] value) throws DbException {
+    public final long putValue(Value key, byte[] value) throws BTreeException {
         return putValue(key, new Value(value));
     }
 
-    public synchronized long putValue(Value key, Value value) throws DbException {
+    public synchronized long putValue(Value key, Value value) throws BTreeException {
         long ptr = findValue(key);
         if (ptr != KEY_NOT_FOUND) {
             // update the page
@@ -171,14 +172,14 @@ public class BIndexFile extends BTree {
         }
     }
 
-    protected final void updateValue(long ptr, Value value) throws DbException {
+    protected final void updateValue(long ptr, Value value) throws BTreeException {
         long pageNum = getPageNumFromPointer(ptr);
         DataPage dataPage = getDataPage(pageNum);
         int tidx = getTidFromPointer(ptr);
         dataPage.set(tidx, value);
     }
 
-    protected final long storeValue(Value value) throws DbException {
+    protected final long storeValue(Value value) throws BTreeException {
         final Long cachedPtr = storeCache.get(value);
         if (cachedPtr != null) {
             return cachedPtr.longValue();
@@ -226,7 +227,7 @@ public class BIndexFile extends BTree {
         }
     }
 
-    public synchronized byte[][] remove(Value key) throws DbException {
+    public synchronized byte[][] remove(Value key) throws BTreeException {
         final List<byte[]> list = new ArrayList<byte[]>(4);
         while (true) {
             final long ptr = findValue(key);
@@ -247,7 +248,7 @@ public class BIndexFile extends BTree {
         return list.toArray(ary);
     }
 
-    protected final byte[] removeValue(long ptr) throws DbException {
+    protected final byte[] removeValue(long ptr) throws BTreeException {
         long pageNum = getPageNumFromPointer(ptr);
         DataPage dataPage = getDataPage(pageNum);
         int tidx = getTidFromPointer(ptr);
@@ -264,14 +265,14 @@ public class BIndexFile extends BTree {
         return b;
     }
 
-    private DataPage createDataPage() throws DbException {
+    private DataPage createDataPage() throws BTreeException {
         Page p = getFreePage();
         DataPage dataPage = new DataPage(p);
         dataCache.put(p.getPageNum(), dataPage);
         return dataPage;
     }
 
-    private DataPage getDataPage(long pageNum) throws DbException {
+    private DataPage getDataPage(long pageNum) throws BTreeException {
         DataPage dataPage = dataCache.get(pageNum);
         if (dataPage == null) {
             Page p = getPage(pageNum);
@@ -279,7 +280,7 @@ public class BIndexFile extends BTree {
             try {
                 dataPage.read();
             } catch (IOException e) {
-                throw new DbException("failed to read page#" + pageNum, e);
+                throw new BTreeException("failed to read page#" + pageNum, e);
             }
             dataCache.put(pageNum, dataPage);
         }
@@ -330,8 +331,8 @@ public class BIndexFile extends BTree {
 
         public void set(int tidx, Value value) {
             if (tidx >= tuples.size()) {
-                throw new IllegalStateException(
-                    "Illegal tid for DataPage#" + page.getPageNum() + ": " + tidx);
+                throw new IllegalStateException("Illegal tid for DataPage#" + page.getPageNum()
+                        + ": " + tidx);
             }
             final byte[] tuple = value.getData();
             final byte[] oldTuple = tuples.set(tidx, tuple);
@@ -343,7 +344,7 @@ public class BIndexFile extends BTree {
             setDirty();
         }
 
-        public byte[] remove(int tidx) throws DbException {
+        public byte[] remove(int tidx) throws BTreeException {
             final int size = tuples.size();
             if (tidx >= size) {
                 throw new IllegalStateException("Index out of range: " + tidx);
@@ -369,7 +370,7 @@ public class BIndexFile extends BTree {
             return tuples.get(tidx);
         }
 
-        public void read() throws DbException, IOException {
+        public void read() throws BTreeException, IOException {
             if (loaded) {
                 return; // should never happens (just for debugging)
             }
@@ -392,7 +393,7 @@ public class BIndexFile extends BTree {
             this.loaded = true;
         }
 
-        public void write() throws DbException {
+        public void write() throws BTreeException {
             if (!dirty) {
                 return;
             }
@@ -410,13 +411,14 @@ public class BIndexFile extends BTree {
                 pos += len;
             }
             if (pos != totalDataLen) {
-                throw new IllegalStateException(
-                    "writes = " + pos + ", but totalDataLen = " + totalDataLen);
+                throw new IllegalStateException("writes = " + pos + ", but totalDataLen = "
+                        + totalDataLen);
             }
             writeValue(page, new Value(dest));
             this.dirty = false;
         }
 
+        @Override
         public int compareTo(DataPage other) {
             return page.compareTo(other.page);
         }
@@ -488,11 +490,11 @@ public class BIndexFile extends BTree {
 
     }
 
-    private final class BFileCallback implements CallbackHandler {
+    private final class BFileCallback implements BTreeCallback {
 
-        final CallbackHandler handler;
+        final BTreeCallback handler;
 
-        public BFileCallback(CallbackHandler handler) {
+        public BFileCallback(BTreeCallback handler) {
             this.handler = handler;
         }
 
@@ -500,7 +502,7 @@ public class BIndexFile extends BTree {
             final byte[] tuple;
             try {
                 tuple = retrieveTuple(pointer);
-            } catch (DbException e) {
+            } catch (BTreeException e) {
                 throw new IllegalStateException(e);
             }
             return handler.indexInfo(key, tuple);
@@ -513,8 +515,8 @@ public class BIndexFile extends BTree {
 
     private static long createPointer(long pageNum, int tid) {
         if (pageNum > 0x7fffffffffffL) {// over 6 bytes
-            throw new IllegalArgumentException(
-                "Unexpected pageNumber that exceeds system limit: " + pageNum);
+            throw new IllegalArgumentException("Unexpected pageNumber that exceeds system limit: "
+                    + pageNum);
         }
         if (tid > 0x7fff) {// over 4 bytes
             throw new IllegalArgumentException("Illegal idx that exceeds system limit: " + tid);
@@ -534,17 +536,18 @@ public class BIndexFile extends BTree {
 
         public Synchronizer() {}
 
+        @Override
         public void cleanup(long key, DataPage dataPage) {
             try {
                 dataPage.write();
-            } catch (DbException e) {
+            } catch (BTreeException e) {
                 throw new IllegalStateException(e);
             }
         }
     }
 
     @Override
-    public synchronized void flush(boolean purge, boolean clear) throws DbException {
+    public synchronized void flush(boolean purge, boolean clear) throws BTreeException {
         if (purge) {
             for (BucketEntry<DataPage> e : dataCache) {
                 DataPage dataPage = e.getValue();

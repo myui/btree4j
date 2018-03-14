@@ -1,5 +1,19 @@
 /*
- * Copyright 2006-2017 Makoto YUI
+ * Copyright (c) 2006-2018 Makoto Yui
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/*
  * Copyright 1999-2004 The Apache Software Foundation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +30,8 @@
  */
 package btree4j;
 
+import btree4j.utils.io.FastMultiByteArrayOutputStream;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -29,21 +45,12 @@ import java.nio.channels.FileChannel;
 import java.util.Map;
 
 import javax.annotation.concurrent.NotThreadSafe;
-import javax.lang.model.type.ReferenceType;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import xbird.storage.DbException;
-import xbird.util.concurrent.reference.ReferenceMap;
-import xbird.util.io.FastMultiByteArrayOutputStream;
+import com.google.common.collect.MapMaker;
 
-/**
- * 
- * <DIV lang="en"></DIV> <DIV lang="ja"></DIV>
- * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
- */
 @NotThreadSafe
 public abstract class Paged {
     private static final Log LOG = LogFactory.getLog(Paged.class);
@@ -57,8 +64,10 @@ public abstract class Paged {
 
     //--------------------------------------------
 
-    private final Map<Long, Reference<Page>> _pages =
-            new ReferenceMap<Long, Reference<Page>>(ReferenceType.WEAK, ReferenceType.SOFT, 64);
+    private final Map<Long, Reference<Page>> _pages;
+    {
+        _pages = new MapMaker().initialCapacity(64).weakKeys().weakValues().makeMap();
+    }
 
     private final FileHeader _fileHeader;
     protected final File _file;
@@ -86,16 +95,16 @@ public abstract class Paged {
     }
 
     /** create index resources and close it. */
-    public boolean create() throws DbException {
+    public boolean create() throws BTreeException {
         return create(true);
     }
 
-    public boolean create(boolean close) throws DbException {
+    public boolean create(boolean close) throws BTreeException {
         ensureResourceOpen();
         try {
             _fileHeader.write();
         } catch (IOException e) {
-            throw new DbException(e);
+            throw new BTreeException(e);
         }
         if (close) {
             close();
@@ -105,13 +114,13 @@ public abstract class Paged {
         return true;
     }
 
-    public boolean open() throws DbException {
+    public boolean open() throws BTreeException {
         ensureResourceOpen();
         if (exists()) {
             try {
                 _fileHeader.read();
             } catch (IOException e) {
-                throw new DbException(e);
+                throw new BTreeException(e);
             }
             this._opened = true;
             return true;
@@ -121,12 +130,12 @@ public abstract class Paged {
         }
     }
 
-    protected final RandomAccessFile ensureResourceOpen() throws DbException {
+    protected final RandomAccessFile ensureResourceOpen() throws BTreeException {
         if (_raf == null) {
             try {
                 this._raf = new RandomAccessFile(_file, "rw");
             } catch (FileNotFoundException e) {
-                throw new DbException(e);
+                throw new BTreeException(e);
             }
         }
         if (_fc == null) {
@@ -135,7 +144,7 @@ public abstract class Paged {
         return _raf;
     }
 
-    public boolean close() throws DbException {
+    public boolean close() throws BTreeException {
         if (_opened) {
             this._opened = false;
             // close resources
@@ -143,7 +152,7 @@ public abstract class Paged {
                 _raf.close();
                 _fc.close();
             } catch (IOException e) {
-                throw new DbException(e);
+                throw new BTreeException(e);
             }
             reset();
             return true;
@@ -152,9 +161,9 @@ public abstract class Paged {
         }
     }
 
-    protected final void checkOpened() throws DbException {
+    protected final void checkOpened() throws BTreeException {
         if (!_opened) {
-            throw new DbException("Not opened");
+            throw new BTreeException("Not opened");
         }
     }
 
@@ -163,7 +172,7 @@ public abstract class Paged {
         this._fc = null;
     }
 
-    public boolean drop() throws DbException {
+    public boolean drop() throws BTreeException {
         close();
         if (exists()) {
             return getFile().delete();
@@ -176,14 +185,14 @@ public abstract class Paged {
         return _file.exists();
     }
 
-    public void flush() throws DbException {
+    public void flush() throws BTreeException {
         try {
             if (_fileHeader._fhDirty) {
                 _fileHeader.write();
             }
             _fc.force(true);
         } catch (IOException e) {
-            throw new DbException(e);
+            throw new BTreeException(e);
         }
     }
 
@@ -204,7 +213,7 @@ public abstract class Paged {
     /**
      * getPage returns the page specified by pageNum.
      */
-    protected final Page getPage(long pageNum) throws DbException {
+    protected final Page getPage(long pageNum) throws BTreeException {
         Page p = null;
         // if not check if it's already loaded in the page cache
         Reference<Page> ref = _pages.get(pageNum); // Check if required page is in the volatile cache
@@ -217,7 +226,7 @@ public abstract class Paged {
             try {
                 p.read(); // Load the page from disk if necessary
             } catch (IOException e) {
-                throw new DbException(e);
+                throw new BTreeException(e);
             }
             _pages.put(pageNum, new WeakReference<Page>(p));
         }
@@ -228,7 +237,7 @@ public abstract class Paged {
      * getFreePage returns the first free Page from secondary storage. If no Pages are available,
      * the file is grown as appropriate.
      */
-    protected final Page getFreePage() throws DbException {
+    protected final Page getFreePage() throws BTreeException {
         Page p = null;
         // Synchronize read and write to the fileHeader.firstFreePage
         if (_fileHeader._firstFreePage != NO_PAGE) {
@@ -249,14 +258,14 @@ public abstract class Paged {
     /**
      * unlinkPages unlinks a set of pages starting at the specified page number.
      */
-    protected final void unlinkPages(long pageNum) throws DbException {
+    protected final void unlinkPages(long pageNum) throws BTreeException {
         unlinkPages(getPage(pageNum));
     }
 
     /**
      * unlinkPages unlinks a set of pages starting at the specified Page.
      */
-    protected final void unlinkPages(Page page) throws DbException {
+    protected final void unlinkPages(Page page) throws BTreeException {
         Page nextPage = page;
         if (nextPage != null) {
             // Walk the chain and add it to the unused list
@@ -286,7 +295,7 @@ public abstract class Paged {
      * @param page The starting Page
      * @param value The Value to write
      */
-    public final void writeValue(Page page, Value value) throws DbException {
+    public final void writeValue(Page page, Value value) throws BTreeException {
         InputStream is = value.getInputStream();
 
         // Write as much as we can onto the primary page.
@@ -295,7 +304,7 @@ public abstract class Paged {
         try {
             page.readData(is);
         } catch (IOException e) {
-            throw new DbException(e);
+            throw new BTreeException(e);
         }
 
         // Write out the rest of the value onto any needed overflow pages
@@ -305,7 +314,7 @@ public abstract class Paged {
             try {
                 available = is.available();
             } catch (IOException e) {
-                throw new DbException(e);
+                throw new BTreeException(e);
             }
             if (available == 0) {
                 break;
@@ -334,7 +343,7 @@ public abstract class Paged {
             try {
                 lastPage.readData(is);
             } catch (IOException e) {
-                throw new DbException(e);
+                throw new BTreeException(e);
             }
             lpage.write();
         }
@@ -355,12 +364,12 @@ public abstract class Paged {
      * @param page The starting page number
      * @param value The Value to write
      */
-    public final void writeValue(long page, Value value) throws DbException {
+    public final void writeValue(long page, Value value) throws BTreeException {
         writeValue(getPage(page), value);
     }
 
     @Deprecated
-    public final long writeValue(Value value) throws DbException {
+    public final long writeValue(Value value) throws BTreeException {
         Page p = getFreePage();
         writeValue(p, value);
         return p.getPageNum();
@@ -372,10 +381,10 @@ public abstract class Paged {
      * @param page The starting Page
      * @return The Value
      */
-    public final Value readValue(Page page) throws DbException {
+    public final Value readValue(Page page) throws BTreeException {
         PageHeader sph = page.getPageHeader();
-        FastMultiByteArrayOutputStream bos =
-                new FastMultiByteArrayOutputStream(sph.getRecordLength());
+        FastMultiByteArrayOutputStream bos = new FastMultiByteArrayOutputStream(
+            sph.getRecordLength());
 
         // Loop until we've read all the pages into memory
         Page p = page;
@@ -384,7 +393,7 @@ public abstract class Paged {
             try {
                 p.writeData(bos);
             } catch (IOException e) {
-                throw new DbException(e);
+                throw new BTreeException(e);
             }
             // Continue following the list of pages until we get to the end
             PageHeader ph = p.getPageHeader();
@@ -405,7 +414,7 @@ public abstract class Paged {
      * @return The Value
      */
     @Deprecated
-    public final Value readValue(long page) throws DbException {
+    public final Value readValue(long page) throws BTreeException {
         return readValue(getPage(page));
     }
 
@@ -639,14 +648,14 @@ public abstract class Paged {
             }
         }
 
-        public synchronized void write() throws DbException {
+        public synchronized void write() throws BTreeException {
             _pageData.rewind();
             _pageHeader.write(_pageData);
             try {
                 _raf.seek(_pageOffset);
                 _raf.write(_pageData.array());
             } catch (IOException e) {
-                throw new DbException(e);
+                throw new BTreeException(e);
             }
         }
 

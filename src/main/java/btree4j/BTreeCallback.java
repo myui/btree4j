@@ -31,39 +31,19 @@
 package btree4j;
 
 /**
- * Key extends Value by providing a hash value for the Key.
+ * BTreeCallback is a callback interface for index lookups.
  */
-public class Key extends Value {
-    private static final long serialVersionUID = 3445130535839461625L;
-    public static final Key[] EMPTY_KEYS = new Key[0];
+public interface BTreeCallback {
 
-    public Key(String data) {
-        super(data);
-    }
+    /**
+     * indexInfo is a callback method for index enumeration.
+     *
+     * @param value The Value being reported
+     * @param pointer The data pointer being reported
+     * @return false to cancel the enumeration
+     */
+    boolean indexInfo(Value value, long pointer);
 
-    public Key(byte[] data) {
-        super(data);
-    }
-
-    public Key(byte[] data, int len) {
-        super(data, len);
-    }
-
-    public Key(byte[] data, int pos, int len) {
-        super(data, pos, len);
-    }
-
-    public boolean equals(Key key) {
-        return hashCode() == key.hashCode() ? compareTo(key) == 0 : false;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof Key) {
-            return equals((Key) obj);
-        } else {
-            return super.equals(obj);
-        }
-    }
+    boolean indexInfo(Value key, byte[] value);
 
 }

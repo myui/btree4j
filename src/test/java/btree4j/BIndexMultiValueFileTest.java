@@ -1,24 +1,27 @@
 /*
- * @(#)$Id$
- *
- * Copyright 2006-2008 Makoto YUI
+ * Copyright (c) 2006-2018 Makoto Yui
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
- * Contributors:
- *     Makoto YUI - initial implementation
  */
 package btree4j;
+
+import btree4j.indexer.BasicIndexQuery.IndexConditionANY;
+import btree4j.utils.datetime.StopWatch;
+import btree4j.utils.io.FileUtils;
+import btree4j.utils.lang.ArrayUtils;
+import btree4j.utils.lang.Primitives;
+import btree4j.utils.lang.PrintUtils;
+import junit.framework.TestCase;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,24 +35,9 @@ import java.util.TreeMap;
 
 import org.junit.Assert;
 
-import btree4j.indexer.BasicIndexQuery.IndexConditionANY;
-import junit.framework.TestCase;
-import xbird.storage.DbException;
-import xbird.util.datetime.StopWatch;
-import xbird.util.io.FileUtils;
-import xbird.util.lang.ArrayUtils;
-import xbird.util.lang.PrintUtils;
-import xbird.util.primitive.Primitives;
-
-/**
- * 
- * <DIV lang="en"></DIV> <DIV lang="ja"></DIV>
- * 
- * @author Makoto YUI (yuin405+xbird@gmail.com)
- */
 public class BIndexMultiValueFileTest extends TestCase {
 
-    public void testBIndexMultiValueFile() throws IOException, DbException {
+    public void testBIndexMultiValueFile() throws IOException, BTreeException {
         File tmpDir = FileUtils.getTempDir();
         Assert.assertTrue(tmpDir.exists());
         File tmpFile = new File(tmpDir, "test1.bmidx");
@@ -64,7 +52,7 @@ public class BIndexMultiValueFileTest extends TestCase {
         invokeTest(btree);
     }
 
-    public void testBIndexFile() throws IOException, DbException {
+    public void testBIndexFile() throws IOException, BTreeException {
         File tmpDir = FileUtils.getTempDir();
         Assert.assertTrue(tmpDir.exists());
         File tmpFile = new File(tmpDir, "test1.bfidx");
@@ -79,8 +67,8 @@ public class BIndexMultiValueFileTest extends TestCase {
         invokeTest(btree);
     }
 
-    private static void invokeTest(BIndexFile btree) throws DbException {
-        final int repeat = 10000000;
+    private static void invokeTest(BIndexFile btree) throws BTreeException {
+        final int repeat = 1000000;
         final int max = 1000;
         final Random rand = new Random(3232328098123L);
         final int[] keys = new int[repeat];
@@ -110,7 +98,7 @@ public class BIndexMultiValueFileTest extends TestCase {
         final StopWatch watchdog2 = new StopWatch("Searching " + repeat + " objects");
         btree.setBulkloading(false, 0.1f, 0.1f);
         final SortedMap<Integer, Set<Integer>> actual = new TreeMap<Integer, Set<Integer>>();
-        btree.search(new IndexConditionANY(), new CallbackHandler() {
+        btree.search(new IndexConditionANY(), new BTreeCallback() {
             public boolean indexInfo(Value value, long pointer) {
                 throw new UnsupportedOperationException();
             }
