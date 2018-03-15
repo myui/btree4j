@@ -8,7 +8,7 @@ This software is originally developed for [XBird](https://github.com/myui/xbird/
 
 Applied many improvements over the original Xindice's implementation as follows:
 
-* Implementes [Prefix B+-tree](https://dl.acm.org/citation.cfm?id=320530) in which prefixes are selected carefully to minimize their length.
+* Implementes [Prefix B+-tree](https://dl.acm.org/citation.cfm?id=320530) in which prefixes are selected carefully to minimize their length. In prefix B+-tree, key prefixes are managed by a [TRIE](https://en.wikipedia.org/wiki/Trie)-like smart algorithm.
 
 > _Rudolf Bayer and Karl Unterauer. "Prefix B-trees", Proc. ACM Trans. Database Syst. 2, 1, pp.11-26), March 1977._ [[DOI](https://doi.org/10.1145/320521.320530 )]
 
@@ -17,6 +17,7 @@ Applied many improvements over the original Xindice's implementation as follows:
 * Support both unique and non-unique indexing. Storing duplicate keys is allowed for non-unique indexing.
 
 * [Index file](https://en.wikipedia.org/wiki/Indexed_file) based on B+-tree is [supported](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BIndexFile.java). [Multiple values per a key](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BIndexMultiValueFile.java) is also supported.
+ [BIndexFile](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BIndexFile.java) stores `<bytes[] KEY, byte[] VALUE>` with VALUE stored on distinct data pages and pointers to them are managed by [B+-Tree](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BTree.java) to avoid consuming many disk pages for large values in B+-tree.
 
 * Support variable-length [key](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/Key.java)/[value](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/Value.java)
 
@@ -24,7 +25,7 @@ Applied many improvements over the original Xindice's implementation as follows:
 
 * Paging (virtual memory) support using [LRU cache replacement policy](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BTree.java) and [Freespace management](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/FreeList.java).
 
-* Deletion is, of course, supported.
+* Deletion and updates are, of course, supported.
 
 * Support efficient Bulk-loading.
 
