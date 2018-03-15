@@ -15,8 +15,6 @@
  */
 package btree4j.utils.collections.longs;
 
-import btree4j.utils.cache.ICacheEntry;
-import btree4j.utils.cache.ILongCache;
 import btree4j.utils.lang.HashUtils;
 
 import java.io.Externalizable;
@@ -29,8 +27,7 @@ import java.util.NoSuchElementException;
 /**
  * ChainedHash implementation for int to Object hash.
  */
-public class LongHash<V> implements Externalizable, Iterable<LongHash.BucketEntry<V>>,
-        ILongCache<V> {
+public class LongHash<V> implements Externalizable, Iterable<LongHash.BucketEntry<V>> {
     private static final long serialVersionUID = 1L;
 
     private static final float DEFAULT_LOAD_FACTOR = 0.7f;
@@ -419,8 +416,8 @@ public class LongHash<V> implements Externalizable, Iterable<LongHash.BucketEntr
                 remove(eldest.key);
             } else {
                 if (_size > _threshold) {
-                    throw new IllegalStateException("size '" + _size + "' exceeds threshold '"
-                            + _threshold + '\'');
+                    throw new IllegalStateException(
+                        "size '" + _size + "' exceeds threshold '" + _threshold + '\'');
                 }
             }
         }
@@ -522,7 +519,4 @@ public class LongHash<V> implements Externalizable, Iterable<LongHash.BucketEntr
         public void cleanup(long key, V value);
     }
 
-    public ICacheEntry<Long, V> fixEntry(long key) {
-        throw new UnsupportedOperationException();
-    }
 }
