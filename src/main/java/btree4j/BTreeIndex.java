@@ -32,7 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class BIndexFile extends BTree {
+public class BTreeIndex extends BTree {
 
     private static final byte DATA_RECORD = 10;
 
@@ -48,19 +48,19 @@ public class BIndexFile extends BTree {
     private final int numDataCaches;
     private final Map<Value, Long> storeCache = new LRUMap<Value, Long>(64);
 
-    public BIndexFile(File file) {
+    public BTreeIndex(File file) {
         this(file, true);
     }
 
-    public BIndexFile(File file, boolean duplicateAllowed) {
+    public BTreeIndex(File file, boolean duplicateAllowed) {
         this(file, DEFAULT_IN_MEMORY_NODES, duplicateAllowed);
     }
 
-    public BIndexFile(File file, int idxPageCaches, boolean duplicateAllowed) {
+    public BTreeIndex(File file, int idxPageCaches, boolean duplicateAllowed) {
         this(file, DEFAULT_PAGESIZE, idxPageCaches, DATA_CACHE_SIZE, duplicateAllowed);
     }
 
-    public BIndexFile(File file, int pageSize, int idxPageCaches, int dataPageCaches,
+    public BTreeIndex(File file, int pageSize, int idxPageCaches, int dataPageCaches,
             boolean duplicateAllowed) {
         super(file, pageSize, idxPageCaches, duplicateAllowed);
         final Synchronizer sync = new Synchronizer();

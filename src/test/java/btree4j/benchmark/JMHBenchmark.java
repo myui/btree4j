@@ -15,7 +15,7 @@
  */
 package btree4j.benchmark;
 
-import btree4j.BIndexFile;
+import btree4j.BTreeIndex;
 import btree4j.BTreeException;
 import btree4j.Value;
 import btree4j.utils.io.FileUtils;
@@ -38,7 +38,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @State(Scope.Thread)
 public class JMHBenchmark {
 
-    private BIndexFile btree;
+    private BTreeIndex btree;
 
     @Setup
     public void setup() throws BTreeException {
@@ -49,7 +49,7 @@ public class JMHBenchmark {
         if (tmpFile.exists()) {
             Assert.assertTrue(tmpFile.delete());
         }
-        this.btree = new BIndexFile(tmpFile);
+        this.btree = new BTreeIndex(tmpFile);
         btree.init(/* bulkload */ false);
     }
 

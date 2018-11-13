@@ -25,18 +25,21 @@ import java.io.File;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public final class BIndexMultiValueFile extends BIndexFile {
-    private static final Log LOG = LogFactory.getLog(BIndexMultiValueFile.class);
+/**
+ * Duplicate allowed version of {@link BTreeIndex}.
+ */
+public final class BTreeIndexDup extends BTreeIndex {
+    private static final Log LOG = LogFactory.getLog(BTreeIndexDup.class);
 
     private final LongLRUMap<MultiPtrs> ptrsCache = new LongLRUMap<MultiPtrs>(512);
 
-    public BIndexMultiValueFile(File file) {
+    public BTreeIndexDup(File file) {
         super(file, false);
         BFileHeader fh = getFileHeader();
         fh.setMultiValue(true);
     }
 
-    public BIndexMultiValueFile(File file, int pageSize, int idxCaches, int dataCaches) {
+    public BTreeIndexDup(File file, int pageSize, int idxCaches, int dataCaches) {
         super(file, pageSize, idxCaches, dataCaches, false);
         BFileHeader fh = getFileHeader();
         fh.setMultiValue(true);
@@ -74,14 +77,14 @@ public final class BIndexMultiValueFile extends BIndexFile {
 
     @Override
     protected BTreeCallback getHandler(BTreeCallback handler) {
-        return new BIndexMultiValueCallback(handler);
+        return new MultiValuesCallback(handler);
     }
 
-    private final class BIndexMultiValueCallback implements BTreeCallback {
+    private final class MultiValuesCallback implements BTreeCallback {
 
         final BTreeCallback handler;
 
-        public BIndexMultiValueCallback(BTreeCallback handler) {
+        public MultiValuesCallback(BTreeCallback handler) {
             this.handler = handler;
         }
 

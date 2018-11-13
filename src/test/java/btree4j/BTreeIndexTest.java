@@ -21,7 +21,6 @@ import btree4j.utils.io.FileUtils;
 import btree4j.utils.lang.ArrayUtils;
 import btree4j.utils.lang.Primitives;
 import btree4j.utils.lang.PrintUtils;
-import junit.framework.TestCase;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,10 +33,50 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.junit.Assert;
+import org.junit.Test;
 
-public class BIndexMultiValueFileTest extends TestCase {
+public class BTreeIndexTest {
 
-    public void testBIndexMultiValueFile() throws IOException, BTreeException {
+    @Test
+    public void testSearch() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BIndexFileTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
+        }
+        BTreeIndex btree = new BTreeIndex(tmpFile);
+        btree.init(/* bulkload */ false);
+
+        for (int i = 0; i < 1000; i++) {
+            Value k = new Value("k" + i);
+            Value v = new Value("v" + i);
+
+            btree.addValue(k, v);
+            if (i % 100 == 0) {
+                btree.putValue(k, new Value("v" + i + "_u"));
+            }
+        }
+
+        for (int i = 0; i < 1000; i++) {
+            Value k = new Value("k" + i);
+            //System.out.println(k);
+            //System.out.println(v);
+            //System.out.println();
+            final Value expected;
+            if (i % 100 == 0) {
+                expected = new Value("v" + i + "_u");
+            } else {
+                expected = new Value("v" + i);
+            }
+            Value actual = btree.getValue(k);
+            Assert.assertEquals(expected, actual);
+        }
+    }
+
+    @Test
+    public void testBtreeIndex() throws IOException, BTreeException {
         File tmpDir = FileUtils.getTempDir();
         Assert.assertTrue(tmpDir.exists());
         File tmpFile = new File(tmpDir, "test1.bmidx");
@@ -46,13 +85,14 @@ public class BIndexMultiValueFileTest extends TestCase {
             Assert.assertTrue(tmpFile.delete());
         }
         System.out.println("Use index file: " + tmpFile.getAbsolutePath());
-        BIndexMultiValueFile btree = new BIndexMultiValueFile(tmpFile);
+        BTreeIndexDup btree = new BTreeIndexDup(tmpFile);
         btree.init(false);
 
         invokeTest(btree);
     }
 
-    public void testBIndexFile() throws IOException, BTreeException {
+    @Test
+    public void testBTreeIndex() throws IOException, BTreeException {
         File tmpDir = FileUtils.getTempDir();
         Assert.assertTrue(tmpDir.exists());
         File tmpFile = new File(tmpDir, "test1.bfidx");
@@ -61,13 +101,13 @@ public class BIndexMultiValueFileTest extends TestCase {
             Assert.assertTrue(tmpFile.delete());
         }
         System.out.println("Use index file: " + tmpFile.getAbsolutePath());
-        BIndexFile btree = new BIndexFile(tmpFile, true);
+        BTreeIndex btree = new BTreeIndex(tmpFile, true);
         btree.init(false);
 
         invokeTest(btree);
     }
 
-    private static void invokeTest(BIndexFile btree) throws BTreeException {
+    private static void invokeTest(BTreeIndex btree) throws BTreeException {
         final int repeat = 1000000;
         final int max = 1000;
         final Random rand = new Random(3232328098123L);
