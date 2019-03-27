@@ -48,7 +48,7 @@ public final class VariableByteCodec {
         return i;
     }
 
-    public static byte[] encodeLong(long val) {
+    public static byte[] encodeUnsignedLong(long val) {
         if (val < 0) {
             throw new IllegalArgumentException("Illegal value: " + val);
         }
@@ -64,7 +64,7 @@ public final class VariableByteCodec {
         return rbuf;
     }
 
-    public static void encodeLong(long val, byte[] out, int offset) {
+    public static void encodeUnsignedLong(long val, byte[] out, int offset) {
         if (val < 0) {
             throw new IllegalArgumentException("Illegal value: " + val);
         }
@@ -75,7 +75,7 @@ public final class VariableByteCodec {
         out[offset++] = (byte) val;
     }
 
-    public static void encodeLong(long val, final OutputStream os) throws IOException {
+    public static void encodeUnsignedLong(long val, final OutputStream os) throws IOException {
         if (val < 0) {
             throw new IllegalArgumentException("Illegal value: " + val);
         }
@@ -88,11 +88,11 @@ public final class VariableByteCodec {
         os.write(b);
     }
 
-    public static long decodeLong(final byte[] val) {
-        return decodeLong(val, 0);
+    public static long decodeUnsignedLong(final byte[] val) {
+        return decodeUnsignedLong(val, 0);
     }
 
-    public static long decodeLong(final byte[] val, final int from) {
+    public static long decodeUnsignedLong(final byte[] val, final int from) {
         long x = 0;
         long b = 0;
         int shift = 0;
@@ -110,7 +110,7 @@ public final class VariableByteCodec {
         return x;
     }
 
-    public static long decodeLong(final InputStream is) throws IOException {
+    public static long decodeUnsignedLong(final InputStream is) throws IOException {
         long x = 0;
         long b = 0;
         int shift = 0;
@@ -127,7 +127,7 @@ public final class VariableByteCodec {
         return x;
     }
 
-    public static void encodeInt(int val, final OutputStream os) throws IOException {
+    public static void encodeUnsignedInt(int val, final OutputStream os) throws IOException {
         if (val < 0) {
             throw new IllegalArgumentException("Illegal value: " + val);
         }
@@ -140,7 +140,7 @@ public final class VariableByteCodec {
         os.write(b);
     }
 
-    public static int decodeInt(final InputStream is) throws IOException {
+    public static int decodeUnsignedInt(final InputStream is) throws IOException {
         int x = 0;
         int b = 0;
         int shift = 0;
@@ -156,7 +156,7 @@ public final class VariableByteCodec {
         return x;
     }
 
-    public static int decodeInt(final InputStream is, int b) throws IOException {
+    public static int decodeUnsignedInt(final InputStream is, int b) throws IOException {
         int x = 0;
         int shift = 0;
 
@@ -171,7 +171,7 @@ public final class VariableByteCodec {
         return x;
     }
 
-    public static int decodeInt(final FastByteArrayInputStream is) {
+    public static int decodeUnsignedInt(final FastByteArrayInputStream is) {
         int x = 0;
         int b = 0;
         int shift = 0;
@@ -187,11 +187,11 @@ public final class VariableByteCodec {
         return x;
     }
 
-    public static int decodeInt(final byte[] val) {
-        return decodeInt(val, 0);
+    public static int decodeUnsignedInt(final byte[] val) {
+        return decodeUnsignedInt(val, 0);
     }
 
-    public static int decodeInt(final byte[] val, final int from) {
+    public static int decodeUnsignedInt(final byte[] val, final int from) {
         int x = 0;
         int b = 0;
         int shift = 0;
