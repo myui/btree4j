@@ -17,12 +17,14 @@ package btree4j.utils.collections.longs;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 
 /**
- * Dynamic Integer array. <DIV lang="en"> This class does not provide strict equality features.
- * </DIV> <DIV lang="ja"> </DIV>
- * 
- * @author Makoto YUI <yuin@bb.din.or.jp>
+ * Dynamic Integer array.
  */
 public final class LongArrayList implements Serializable {
     private static final long serialVersionUID = -3522471296182738673L;
@@ -30,6 +32,7 @@ public final class LongArrayList implements Serializable {
     public static final int DEFAULT_CAPACITY = 12;
 
     /** array entity */
+    @Nonnull
     private long[] data;
     private int used;
 
@@ -42,8 +45,8 @@ public final class LongArrayList implements Serializable {
         this.used = 0;
     }
 
-    public LongArrayList(long[] initValues, int used) {
-        this.data = initValues;
+    public LongArrayList(@CheckForNull long[] initValues, int used) {
+        this.data = Objects.requireNonNull(initValues);
         this.used = used;
     }
 
@@ -66,35 +69,36 @@ public final class LongArrayList implements Serializable {
     /**
      * dynamic expansion.
      */
-    private void expand(int max) {
-        while (data.length < max) {
-            final int len = data.length;
-            long[] newArray = new long[len * 2];
-            System.arraycopy(data, 0, newArray, 0, len);
+    private void expand(final int minimumCapacity) {
+        while (data.length < minimumCapacity) {
+            int oldLen = data.length;
+            int newLen = (int) Math.max(minimumCapacity, Math.min(oldLen * 2L, Integer.MAX_VALUE));
+            long[] newArray = new long[newLen];
+            System.arraycopy(data, 0, newArray, 0, oldLen);
             this.data = newArray;
         }
     }
 
     public long remove() {
+        if (used == 0) {
+            throw new NoSuchElementException("No elements to remove");
+        }
         return data[--used];
     }
 
     public long remove(int index) {
-        final long ret;
-        if (index > used) {
+        if (index >= used) {
             throw new IndexOutOfBoundsException();
-        } else if (index == used) {
-            ret = data[--used];
-        } else { // index < used
-            // removed value
+        }
+
+        final long ret;
+        if (index == used) {
             ret = data[index];
-            final long[] newarray = new long[--used];
-            // prefix
-            System.arraycopy(data, 0, newarray, 0, index - 1);
-            // appendix
-            System.arraycopy(data, index + 1, newarray, index, used - index);
-            // set fields.
-            this.data = newarray;
+            --used;
+        } else { // index < used
+            ret = data[index];
+            System.arraycopy(data, index + 1, data, index, used - index - 1);
+            --used;
         }
         return ret;
     }
@@ -109,8 +113,9 @@ public final class LongArrayList implements Serializable {
     }
 
     public long get(int index) {
-        if (index >= used)
+        if (index >= used) {
             throw new IndexOutOfBoundsException();
+        }
         return data[index];
     }
 
