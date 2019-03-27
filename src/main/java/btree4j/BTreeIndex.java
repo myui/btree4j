@@ -32,6 +32,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 public class BTreeIndex extends BTree {
 
     private static final byte DATA_RECORD = 10;
@@ -40,8 +43,8 @@ public class BTreeIndex extends BTree {
     public static final int DATA_CACHE_PURGE_UNIT;
     static {
         DATA_CACHE_SIZE = Primitives.parseInt(Settings.get("btree4j.bfile.datacache_size"), 2048); // 4k * 2048 = 8m
-        DATA_CACHE_PURGE_UNIT = Primitives.parseInt(
-            Settings.get("btree4j.bfile.datacache_purgeunit"), 16); // 4k * 16 = 64k
+        DATA_CACHE_PURGE_UNIT =
+                Primitives.parseInt(Settings.get("btree4j.bfile.datacache_purgeunit"), 16); // 4k * 16 = 64k
     }
 
     private final PurgeOptObservableLongLRUMap<DataPage> dataCache;
@@ -73,8 +76,8 @@ public class BTreeIndex extends BTree {
         setBulkloading(enable, nodeCachePurgePerc);
         if (enable) {
             if (dataCachePurgePerc <= 0 || dataCachePurgePerc > 1) {
-                throw new IllegalArgumentException("dataCachePurgePerc is illegal as percentage: "
-                        + nodeCachePurgePerc);
+                throw new IllegalArgumentException(
+                    "dataCachePurgePerc is illegal as percentage: " + nodeCachePurgePerc);
             }
             int units = Math.max((int) (numDataCaches * dataCachePurgePerc), numDataCaches);
             dataCache.setPurgeUnits(units);
@@ -98,11 +101,13 @@ public class BTreeIndex extends BTree {
         return new BFilePageHeader();
     }
 
+    @Nullable
     public final byte[] getValueBytes(long key) throws BTreeException {
         return getValueBytes(new Value(key));
     }
 
-    public synchronized byte[] getValueBytes(Value key) throws BTreeException {
+    @Nullable
+    public synchronized byte[] getValueBytes(@Nonnull Value key) throws BTreeException {
         final long ptr = findValue(key);
         if (ptr == KEY_NOT_FOUND) {
             return null;
@@ -117,8 +122,12 @@ public class BTreeIndex extends BTree {
         return dataPage.get(tidx);
     }
 
-    public Value getValue(Value key) throws BTreeException {
+    @Nullable
+    public Value getValue(@Nonnull Value key) throws BTreeException {
         final byte[] tuple = getValueBytes(key);
+        if (tuple == null) {
+            return null;
+        }
         return new Value(tuple);
     }
 
@@ -131,15 +140,19 @@ public class BTreeIndex extends BTree {
         return new BFileCallback(handler);
     }
 
-    public final long addValue(long key, byte[] value) throws BTreeException {
+    public final long addValue(long key, @Nonnull byte[] value) throws BTreeException {
         return addValue(new Value(key), new Value(value));
     }
 
-    public final long addValue(Value key, byte[] value) throws BTreeException {
+    public final long addValue(@Nonnull Value key, @Nonnull byte[] value) throws BTreeException {
         return addValue(key, new Value(value));
     }
 
-    public synchronized long addValue(Value key, Value value) throws BTreeException {
+    /**
+     * @return pointer to the inserted record
+     */
+    public synchronized long addValue(@Nonnull Value key, @Nonnull Value value)
+            throws BTreeException {
         long ptr = findValue(key);
         if (ptr != KEY_NOT_FOUND) {// key found
             // update the page
@@ -154,11 +167,12 @@ public class BTreeIndex extends BTree {
         return ptr;
     }
 
-    public final long putValue(Value key, byte[] value) throws BTreeException {
+    public final long putValue(@Nonnull Value key, @Nonnull byte[] value) throws BTreeException {
         return putValue(key, new Value(value));
     }
 
-    public synchronized long putValue(Value key, Value value) throws BTreeException {
+    public synchronized long putValue(@Nonnull Value key, @Nonnull Value value)
+            throws BTreeException {
         long ptr = findValue(key);
         if (ptr != KEY_NOT_FOUND) {
             // update the page
@@ -172,14 +186,14 @@ public class BTreeIndex extends BTree {
         }
     }
 
-    protected final void updateValue(long ptr, Value value) throws BTreeException {
+    protected final void updateValue(long ptr, @Nonnull Value value) throws BTreeException {
         long pageNum = getPageNumFromPointer(ptr);
         DataPage dataPage = getDataPage(pageNum);
         int tidx = getTidFromPointer(ptr);
         dataPage.set(tidx, value);
     }
 
-    protected final long storeValue(Value value) throws BTreeException {
+    protected final long storeValue(@Nonnull Value value) throws BTreeException {
         final Long cachedPtr = storeCache.get(value);
         if (cachedPtr != null) {
             return cachedPtr.longValue();
@@ -211,7 +225,8 @@ public class BTreeIndex extends BTree {
         return ptr;
     }
 
-    private void saveFreeList(FreeList freeList, FreeSpace free, DataPage dataPage) {
+    private void saveFreeList(@Nonnull FreeList freeList, @Nullable FreeSpace free,
+            @Nonnull DataPage dataPage) {
         final BFileHeader fh = getFileHeader();
         final int leftFree = fh.getWorkSize() - dataPage.getTotalDataLen();
         if (free != null) {
@@ -331,8 +346,8 @@ public class BTreeIndex extends BTree {
 
         public void set(int tidx, Value value) {
             if (tidx >= tuples.size()) {
-                throw new IllegalStateException("Illegal tid for DataPage#" + page.getPageNum()
-                        + ": " + tidx);
+                throw new IllegalStateException(
+                    "Illegal tid for DataPage#" + page.getPageNum() + ": " + tidx);
             }
             final byte[] tuple = value.getData();
             final byte[] oldTuple = tuples.set(tidx, tuple);
@@ -411,8 +426,8 @@ public class BTreeIndex extends BTree {
                 pos += len;
             }
             if (pos != totalDataLen) {
-                throw new IllegalStateException("writes = " + pos + ", but totalDataLen = "
-                        + totalDataLen);
+                throw new IllegalStateException(
+                    "writes = " + pos + ", but totalDataLen = " + totalDataLen);
             }
             writeValue(page, new Value(dest));
             this.dirty = false;
@@ -515,8 +530,8 @@ public class BTreeIndex extends BTree {
 
     private static long createPointer(long pageNum, int tid) {
         if (pageNum > 0x7fffffffffffL) {// over 6 bytes
-            throw new IllegalArgumentException("Unexpected pageNumber that exceeds system limit: "
-                    + pageNum);
+            throw new IllegalArgumentException(
+                "Unexpected pageNumber that exceeds system limit: " + pageNum);
         }
         if (tid > 0x7fff) {// over 4 bytes
             throw new IllegalArgumentException("Illegal idx that exceeds system limit: " + tid);
@@ -544,6 +559,11 @@ public class BTreeIndex extends BTree {
                 throw new IllegalStateException(e);
             }
         }
+    }
+
+    @Override
+    public void flush() throws BTreeException {
+        flush(true, false);
     }
 
     @Override
