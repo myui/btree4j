@@ -57,8 +57,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * IO related utilities. <DIV lang="en"> This code is ported from Jakarta's <a
- * href="http://jakarta.apache.org/commons/io/">Commons-IO</a>. </DIV> <DIV lang="ja"></DIV>.
+ * IO related utilities.
  */
 public final class IOUtils {
 

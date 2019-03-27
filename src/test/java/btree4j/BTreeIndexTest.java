@@ -116,7 +116,7 @@ public class BTreeIndexTest {
     }
 
     @Test
-    public void testBtreeIndex() throws IOException, BTreeException {
+    public void testBtreeIndexDup() throws IOException, BTreeException {
         File tmpDir = FileUtils.getTempDir();
         Assert.assertTrue(tmpDir.exists());
         File tmpFile = new File(tmpDir, "test1.bmidx");
