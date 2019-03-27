@@ -40,6 +40,7 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Map;
@@ -383,8 +384,8 @@ public abstract class Paged {
      */
     public final Value readValue(Page page) throws BTreeException {
         PageHeader sph = page.getPageHeader();
-        FastMultiByteArrayOutputStream bos = new FastMultiByteArrayOutputStream(
-            sph.getRecordLength());
+        FastMultiByteArrayOutputStream bos =
+                new FastMultiByteArrayOutputStream(sph.getRecordLength());
 
         // Loop until we've read all the pages into memory
         Page p = page;
@@ -691,7 +692,8 @@ public abstract class Paged {
             if (datalen > 0) {
                 byte[] b = new byte[datalen];
                 is.read(b);
-                _pageData.position(getDataPos());
+                // Explicit cast for compatibility with covariant return type on JDK 9's ByteBuffer
+                ((Buffer) _pageData).position(getDataPos());
                 _pageData.put(b);
             }
         }
