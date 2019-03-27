@@ -240,7 +240,7 @@ public class BTreeIndexTest {
             btree.addValue(key, value);
             if (i % 10000 == 0) {
                 kv.put(key, val);
-                println("put k: " + key + ", v: " + val);
+                //println("put k: " + key + ", v: " + val);
             }
             Assert.assertEquals(value, btree.getValue(key));
 
@@ -249,7 +249,7 @@ public class BTreeIndexTest {
             //}
         }
         btree.flush();
-        //btree.close();
+        btree.close();
 
         Assert.assertTrue(indexFile.exists());
         println("File size of '" + FileUtils.getFileName(indexFile) + "': "

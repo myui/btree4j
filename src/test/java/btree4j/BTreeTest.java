@@ -103,14 +103,14 @@ public class BTreeTest {
             //}
         }
         btree.flush(true, true);
-        //btree.close();
+        btree.close();
 
         Assert.assertTrue(indexFile.exists());
         println("File size of '" + FileUtils.getFileName(indexFile) + "': "
                 + PrintUtils.prettyFileSize(indexFile));
 
-        //btree = new BTree(indexFile, false);
-        //btree.init(false);
+        btree = new BTree(indexFile, false);
+        btree.init(false);
         for (Entry<Value, Long> e : kv.entrySet()) {
             Value k = e.getKey();
             Long v = e.getValue();
