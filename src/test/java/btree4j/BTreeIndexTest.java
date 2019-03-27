@@ -25,8 +25,10 @@ import btree4j.utils.lang.PrintUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
@@ -36,6 +38,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class BTreeIndexTest {
+    private static final boolean DEBUG = true;
 
     @Test
     public void testSearch() throws BTreeException {
@@ -61,9 +64,46 @@ public class BTreeIndexTest {
 
         for (int i = 0; i < 1000; i++) {
             Value k = new Value("k" + i);
-            //System.out.println(k);
-            //System.out.println(v);
-            //System.out.println();
+            final Value expected;
+            if (i % 100 == 0) {
+                expected = new Value("v" + i + "_u");
+            } else {
+                expected = new Value("v" + i);
+            }
+            Value actual = btree.getValue(k);
+            Assert.assertEquals(expected, actual);
+        }
+    }
+
+    @Test
+    public void testSearch2() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BIndexFileTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
+        }
+        BTreeIndex btree = new BTreeIndex(tmpFile);
+        btree.init(/* bulkload */ false);
+
+        for (int i = 0; i < 1000; i++) {
+            Value k = new Value("k" + i);
+            Value v = new Value("v" + i);
+
+            btree.addValue(k, v);
+            if (i % 100 == 0) {
+                btree.putValue(k, new Value("v" + i + "_u"));
+            }
+        }
+        btree.flush();
+        btree.close();
+
+        btree = new BTreeIndex(tmpFile);
+        btree.init(/* bulkload */ false);
+
+        for (int i = 0; i < 1000; i++) {
+            Value k = new Value("k" + i);
             final Value expected;
             if (i % 100 == 0) {
                 expected = new Value("v" + i + "_u");
@@ -84,7 +124,7 @@ public class BTreeIndexTest {
         if (tmpFile.exists()) {
             Assert.assertTrue(tmpFile.delete());
         }
-        System.out.println("Use index file: " + tmpFile.getAbsolutePath());
+        println("Use index file: " + tmpFile.getAbsolutePath());
         BTreeIndexDup btree = new BTreeIndexDup(tmpFile);
         btree.init(false);
 
@@ -100,7 +140,7 @@ public class BTreeIndexTest {
         if (tmpFile.exists()) {
             Assert.assertTrue(tmpFile.delete());
         }
-        System.out.println("Use index file: " + tmpFile.getAbsolutePath());
+        println("Use index file: " + tmpFile.getAbsolutePath());
         BTreeIndex btree = new BTreeIndex(tmpFile, true);
         btree.init(false);
 
@@ -172,10 +212,65 @@ public class BTreeIndexTest {
         btree.flush();
 
         File file = btree.getFile();
-        System.err.println("File size of '" + FileUtils.getFileName(file) + "': "
+        println("File size of '" + FileUtils.getFileName(file) + "': "
                 + PrintUtils.prettyFileSize(file));
 
         System.gc();
+    }
+
+    @Test
+    public void test10m() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File indexFile = new File(tmpDir, "test10m.idx");
+        indexFile.deleteOnExit();
+        if (indexFile.exists()) {
+            Assert.assertTrue(indexFile.delete());
+        }
+
+        BTreeIndex btree = new BTreeIndex(indexFile, false);
+        btree.init(false);
+
+        final Map<Value, Long> kv = new HashMap<>();
+        final Random rand = new Random();
+        for (int i = 0; i < 10000000; i++) {
+            long nt = System.nanoTime(), val = rand.nextLong();
+            Value key = new Value(String.valueOf(nt) + val);
+            Value value = new Value(val);
+            btree.addValue(key, value);
+            if (i % 10000 == 0) {
+                kv.put(key, val);
+                println("put k: " + key + ", v: " + val);
+            }
+            Assert.assertEquals(value, btree.getValue(key));
+
+            //if (i % 1000000 == 0) {
+            //    btree.flush();
+            //}
+        }
+        btree.flush();
+        //btree.close();
+
+        Assert.assertTrue(indexFile.exists());
+        println("File size of '" + FileUtils.getFileName(indexFile) + "': "
+                + PrintUtils.prettyFileSize(indexFile));
+
+        btree = new BTreeIndex(indexFile, false);
+        btree.init(false);
+        for (Entry<Value, Long> e : kv.entrySet()) {
+            Value k = e.getKey();
+            Long v = e.getValue();
+            Value result = btree.getValue(k);
+            Assert.assertNotNull("key is not registered: " + k, result);
+            Assert.assertEquals("Exexpected value '" + result + "' found for key: " + k,
+                v.longValue(), Primitives.getLong(result.getData()));
+        }
+    }
+
+    private static void println(String msg) {
+        if (DEBUG) {
+            System.out.println(msg);
+        }
     }
 
 }

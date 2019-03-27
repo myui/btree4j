@@ -17,13 +17,19 @@ package btree4j;
 
 import btree4j.indexer.BasicIndexQuery.IndexConditionBW;
 import btree4j.utils.io.FileUtils;
+import btree4j.utils.lang.PrintUtils;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Random;
 
 import org.junit.Assert;
 import org.junit.Test;
 
 public class BTreeTest {
+    private static final boolean DEBUG = true;
 
     @Test
     public void test() throws BTreeException {
@@ -65,6 +71,60 @@ public class BTreeTest {
                     throw new UnsupportedOperationException();
                 }
             });
+    }
+
+    @Test
+    public void test10m() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File indexFile = new File(tmpDir, "test10m.idx");
+        indexFile.deleteOnExit();
+        if (indexFile.exists()) {
+            Assert.assertTrue(indexFile.delete());
+        }
+
+        BTree btree = new BTree(indexFile, false);
+        btree.init(false);
+
+        final Map<Value, Long> kv = new HashMap<>();
+        final Random rand = new Random();
+        for (int i = 0; i < 10000000; i++) {
+            long nt = System.nanoTime(), val = rand.nextInt(Integer.MAX_VALUE); // FIXME val = rand.nextLong();
+            Value key = new Value(String.valueOf(nt) + val);
+            btree.addValue(key, val);
+            if (i % 10000 == 0) {
+                kv.put(key, val);
+                //println("put k: " + key + ", v: " + val);
+            }
+            Assert.assertEquals(val, btree.findValue(key));
+
+            //if (i % 1000000 == 0) {
+            //    btree.flush();
+            //}
+        }
+        btree.flush(true, true);
+        //btree.close();
+
+        Assert.assertTrue(indexFile.exists());
+        println("File size of '" + FileUtils.getFileName(indexFile) + "': "
+                + PrintUtils.prettyFileSize(indexFile));
+
+        //btree = new BTree(indexFile, false);
+        //btree.init(false);
+        for (Entry<Value, Long> e : kv.entrySet()) {
+            Value k = e.getKey();
+            Long v = e.getValue();
+            long result = btree.findValue(k);
+            Assert.assertNotEquals("key is not registered: " + k, BTree.KEY_NOT_FOUND, result);
+            Assert.assertEquals("Exexpected value '" + result + "' found for key: " + k,
+                v.longValue(), result);
+        }
+    }
+
+    private static void println(String msg) {
+        if (DEBUG) {
+            System.out.println(msg);
+        }
     }
 
 }
