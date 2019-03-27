@@ -943,7 +943,7 @@ public class BTree extends Paged {
                 ph.setPrefixLength((short) 0);
             }
             setDirty(true);
-            //_cache.put(page.getPageNum(), this); // required? REVIEWME
+            _cache.put(page.getPageNum(), this); // required for paging out
         }
 
         private void setDirty(final boolean dirt) {
