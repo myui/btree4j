@@ -15,7 +15,6 @@
  */
 package btree4j;
 
-import btree4j.indexer.BasicIndexQuery.IndexConditionBW;
 import btree4j.utils.io.FileUtils;
 import btree4j.utils.lang.PrintUtils;
 
@@ -32,10 +31,10 @@ import static btree4j.BTree.KEY_NOT_FOUND;
 
 public class BTreeTest {
     private static final boolean DEBUG = true;
-    final private int MAXN = 5000 * 1000;
+    final private int MAXN = 5000 * 100;
 
     @Test
-    public void shouldAdd5m() throws BTreeException {
+    public void shouldAdd() throws BTreeException {
         File tmpDir = FileUtils.getTempDir();
         Assert.assertTrue(tmpDir.exists());
         File tmpFile = new File(tmpDir, "BTreeTest1.idx");
@@ -60,7 +59,7 @@ public class BTreeTest {
     }
 
     @Test
-    public void shouldAddRemove5m() throws BTreeException {
+    public void shouldAddThenRemove() throws BTreeException {
         File tmpDir = FileUtils.getTempDir();
         Assert.assertTrue(tmpDir.exists());
         File tmpFile = new File(tmpDir, "BTreeTest1.idx");
@@ -90,7 +89,84 @@ public class BTreeTest {
     }
 
     @Test
-    public void shouldAddThenRemoveHalf5m() throws BTreeException {
+    public void shouldAddThenRemoveFrom() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BTreeTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
+        }
+
+        BTree btree = new BTree(tmpFile);
+        btree.init(/* bulkload */ false);
+        btree.findValue(new Value("k"));
+
+        for (int i = 0; i < MAXN; i++) {
+            Value k = new Value("k" + i);
+            btree.addValue(k, i);
+        }
+
+        btree.removeValueFrom(new Value("k" + 0));
+
+        for (int i = 0; i < MAXN; i++) {
+            Value k = new Value("k" + i);
+            long actual = btree.findValue(k);
+            Assert.assertEquals(KEY_NOT_FOUND, actual);
+        }
+    }
+
+    private int getFirstDigit(int a) {
+        return Integer.parseInt(Integer.toString(a).substring(0, 1));
+    }
+    @Test
+    public void shouldAddThenRemoveFromHalf() throws BTreeException {
+        shouldAddThenRemoveFrom(MAXN / 2);
+    }
+    @Test
+    public void shouldAddThenRemoveFromOneTenth() throws BTreeException {
+        shouldAddThenRemoveFrom(MAXN / 10);
+    }
+    @Test
+    public void shouldAddThenRemoveFromAndClearChild() throws BTreeException {
+        shouldAddThenRemoveFrom(249905 < MAXN ? 249905 : 1);
+    }
+    @Test
+    public void shouldAddThenRemoveFromAndChangeRoot() throws BTreeException {
+        shouldAddThenRemoveFrom(433 < MAXN ? 433 : 1);
+    }
+
+    private void shouldAddThenRemoveFrom(int threshold) throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BTreeTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
+        }
+
+        BTree btree = new BTree(tmpFile);
+        btree.init(/* bulkload */ false);
+
+        for (int i = 0; i < MAXN; i++) {
+            Value k = new Value("k" + i);
+            btree.addValue(k, i);
+        }
+
+        btree.removeValueFrom(new Value("k" + threshold));
+
+        for (int i = 0; i < MAXN; i++) {
+            Value k = new Value("k" + i);
+            long actual = btree.findValue(k);
+            if (String.valueOf(i).compareTo(String.valueOf(threshold)) < 0)
+                Assert.assertEquals(i, actual);
+            else
+                Assert.assertEquals(KEY_NOT_FOUND, actual);
+        }
+    }
+
+    @Test
+    public void shouldAddThenRemoveHalf500k() throws BTreeException {
         File tmpDir = FileUtils.getTempDir();
         Assert.assertTrue(tmpDir.exists());
         File tmpFile = new File(tmpDir, "BTreeTest1.idx");
@@ -123,7 +199,7 @@ public class BTreeTest {
     }
 
     @Test
-    public void shouldAddRemoveRandom10m() throws BTreeException {
+    public void shouldAddRemoveRandom1m() throws BTreeException {
         File tmpDir = FileUtils.getTempDir();
         Assert.assertTrue(tmpDir.exists());
         File indexFile = new File(tmpDir, "test10m.idx");

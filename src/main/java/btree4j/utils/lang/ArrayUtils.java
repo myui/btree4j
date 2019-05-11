@@ -501,6 +501,11 @@ public final class ArrayUtils {
         return copy;
     }
 
+    /**
+     * @param fromIndex Inclusive first index
+     * @param toIndex Non-inclusive last index
+     * @return returns either the found index or -1 * (the index of the first key greater than key + 1)
+     */
     public static <T extends Comparable<T>> int binarySearch(final T[] a, final int fromIndex,
             final int toIndex, final T key) {
         int low = fromIndex;

@@ -71,6 +71,8 @@ public class BTree extends Paged {
     }
 
     public static final int KEY_NOT_FOUND = -1;
+    private static final int CHILD_NODE_CLEARED = 0;
+    private static final int CHILD_NODE_HAS_VALUE = 1;
     private static final int LEAST_KEYS = 5;
 
     private static final byte[] EmptyBytes = new byte[0];
@@ -237,6 +239,10 @@ public class BTree extends Paged {
         } catch (IOException e) {
             throw new BTreeException(e);
         }
+    }
+
+    public synchronized void removeValueFrom(Value value) throws BTreeException {
+        _rootNode.removeFrom(value);
     }
 
     /**
@@ -649,6 +655,40 @@ public class BTree extends Paged {
                 }
             }
             return -(low + 1); // key not found.
+        }
+
+        /**
+         * remove all values greater than a threshold
+         * @return variable indicating if it should delete the child node as well
+         */
+        @Beta
+        int removeFrom(Value searchKey) throws BTreeException {
+            resetDataLength();
+            int leftIdx = searchLeftmostKey(keys, searchKey, keys.length);
+            switch (ph.getStatus()) {
+                case BRANCH:
+                    leftIdx = (leftIdx < 0) ? -(leftIdx + 1) : leftIdx;
+                    int childNodeStatus = getChildNode(leftIdx).removeFrom(searchKey);
+
+                    leftIdx += (childNodeStatus == CHILD_NODE_CLEARED) ? 0 : 0;
+                    if (leftIdx < keys.length && leftIdx + 1 < ptrs.length)
+                        set(ArrayUtils.removeFrom(keys, leftIdx), ArrayUtils.removeFrom(ptrs, leftIdx + 1));
+                    break;
+                case LEAF:
+                    leftIdx = (leftIdx < 0) ? -(leftIdx + 1) : leftIdx;
+                    if (leftIdx < keys.length && leftIdx < ptrs.length)
+                        set(ArrayUtils.removeFrom(keys, leftIdx), ArrayUtils.removeFrom(ptrs, leftIdx));
+                    break;
+                default:
+                    throw new BTreeCorruptException(
+                            "Invalid page type '" + ph.getStatus() + "' in removeValue");
+            }
+
+            if (getParent() == null)
+                while (_rootNode.ptrs.length == 1) {
+                    _rootNode = _rootNode.getChildNode(0);
+                }
+            return leftIdx > 0 ? CHILD_NODE_HAS_VALUE : CHILD_NODE_CLEARED;
         }
 
         /** @return pointer of left-most matched item */
@@ -1120,15 +1160,16 @@ public class BTree extends Paged {
         }
 
         /** find lest-most value which matches to the key */
-        long findValue(Value serarchKey) throws BTreeException {
-            if (serarchKey == null) {
+        long findValue(Value searchKey) throws BTreeException {
+            if (searchKey == null) {
                 throw new BTreeException("Can't search on null Value");
             }
-            int idx = searchLeftmostKey(keys, serarchKey, keys.length);
+            int idx = searchLeftmostKey(keys, searchKey, keys.length);
             switch (ph.getStatus()) {
                 case BRANCH:
                     idx = idx < 0 ? -(idx + 1) : idx + 1;
-                    return getChildNode(idx).findValue(serarchKey);
+//                    if (idx >= keys.length) idx = keys.length - 1;
+                    return getChildNode(idx).findValue(searchKey);
                 case LEAF:
                     if (idx < 0) {
                         return KEY_NOT_FOUND;
@@ -1139,7 +1180,7 @@ public class BTree extends Paged {
                                 leftmostNode = getBTreeNode(root, leftmostNode._prev);
                                 final Value[] lmKeys = leftmostNode.keys;
                                 assert (lmKeys.length > 0);
-                                if (!lmKeys[0].equals(serarchKey)) {
+                                if (!lmKeys[0].equals(searchKey)) {
                                     break;
                                 }
                                 final int prevLookup = leftmostNode.ph.getLeftLookup();
@@ -1148,11 +1189,11 @@ public class BTree extends Paged {
                                 }
                             }
                             final Value[] lmKeys = leftmostNode.keys;
-                            final int lmIdx = leftmostNode.searchLeftmostKey(lmKeys, serarchKey,
+                            final int lmIdx = leftmostNode.searchLeftmostKey(lmKeys, searchKey,
                                 lmKeys.length);
                             if (lmIdx < 0) {
                                 throw new BTreeCorruptException(
-                                    "Duplicated key was not found: " + serarchKey);
+                                    "Duplicated key was not found: " + searchKey);
                             }
                             final long[] leftmostPtrs = leftmostNode.ptrs;
                             return leftmostPtrs[lmIdx];
