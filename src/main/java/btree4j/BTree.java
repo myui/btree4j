@@ -71,8 +71,6 @@ public class BTree extends Paged {
     }
 
     public static final int KEY_NOT_FOUND = -1;
-    private static final int CHILD_NODE_CLEARED = 0;
-    private static final int CHILD_NODE_HAS_VALUE = 1;
     private static final int LEAST_KEYS = 5;
 
     private static final byte[] EmptyBytes = new byte[0];
@@ -662,15 +660,14 @@ public class BTree extends Paged {
          * @return variable indicating if it should delete the child node as well
          */
         @Beta
-        int removeFrom(Value searchKey) throws BTreeException {
+        void removeFrom(Value searchKey) throws BTreeException {
             resetDataLength();
             int leftIdx = searchLeftmostKey(keys, searchKey, keys.length);
             switch (ph.getStatus()) {
                 case BRANCH:
                     leftIdx = (leftIdx < 0) ? -(leftIdx + 1) : leftIdx;
-                    int childNodeStatus = getChildNode(leftIdx).removeFrom(searchKey);
+                    getChildNode(leftIdx).removeFrom(searchKey);
 
-                    leftIdx += (childNodeStatus == CHILD_NODE_CLEARED) ? 0 : 0;
                     if (leftIdx < keys.length && leftIdx + 1 < ptrs.length)
                         set(ArrayUtils.removeFrom(keys, leftIdx), ArrayUtils.removeFrom(ptrs, leftIdx + 1));
                     break;
@@ -688,7 +685,6 @@ public class BTree extends Paged {
                 while (_rootNode.ptrs.length == 1) {
                     _rootNode = _rootNode.getChildNode(0);
                 }
-            return leftIdx > 0 ? CHILD_NODE_HAS_VALUE : CHILD_NODE_CLEARED;
         }
 
         /** @return pointer of left-most matched item */
@@ -1168,7 +1164,6 @@ public class BTree extends Paged {
             switch (ph.getStatus()) {
                 case BRANCH:
                     idx = idx < 0 ? -(idx + 1) : idx + 1;
-//                    if (idx >= keys.length) idx = keys.length - 1;
                     return getChildNode(idx).findValue(searchKey);
                 case LEAF:
                     if (idx < 0) {
