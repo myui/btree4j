@@ -675,6 +675,7 @@ public class BTree extends Paged {
                     leftIdx = (leftIdx < 0) ? -(leftIdx + 1) : leftIdx;
                     if (leftIdx < keys.length && leftIdx < ptrs.length)
                         set(ArrayUtils.removeFrom(keys, leftIdx), ArrayUtils.removeFrom(ptrs, leftIdx));
+                    this._next = -1;
                     break;
                 default:
                     throw new BTreeCorruptException(
