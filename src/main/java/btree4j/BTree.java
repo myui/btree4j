@@ -704,7 +704,7 @@ public class BTree extends Paged {
                             return new long[0];
                         }
                         return (founds == matched.length) ? matched
-                                : ArrayUtils.copyOfRange(matched, 0, founds);
+                                : Arrays.copyOfRange(matched, 0, founds);
                     }
                 }
                 default:

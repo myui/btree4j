@@ -15,8 +15,6 @@
  */
 package btree4j.utils.collections;
 
-import btree4j.utils.lang.ArrayUtils;
-
 import java.io.Serializable;
 
 /**
@@ -103,7 +101,7 @@ public final class IntStack implements Serializable, Cloneable {
 
     @Override
     public IntStack clone() {
-        final IntStack cloned = new IntStack(ArrayUtils.copyOf(data, data.length));
+        IntStack cloned = new IntStack(data.clone());
         cloned.size = this.size;
         return cloned;
     }

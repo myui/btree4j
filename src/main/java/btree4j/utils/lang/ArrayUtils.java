@@ -45,14 +45,6 @@ public final class ArrayUtils {
 
     private ArrayUtils() {}
 
-    public static <T> T[] copy(final T[] original) {
-        return copyOf(original, original.length);
-    }
-
-    public static int[] copy(final int[] original) {
-        return copyOf(original, original.length);
-    }
-
     /**
      * <p>
      * Returns the length of the specified array. This method can deal with <code>Object</code>
@@ -114,7 +106,8 @@ public final class ArrayUtils {
         return INDEX_NOT_FOUND;
     }
 
-    public static int indexOf(final int[] array, final int valueToFind, int startIndex, int endIndex) {
+    public static int indexOf(final int[] array, final int valueToFind, int startIndex,
+            int endIndex) {
         if (array == null) {
             return INDEX_NOT_FOUND;
         }
@@ -148,7 +141,8 @@ public final class ArrayUtils {
     /**
      * Returns the last index of the given array or -1 if empty or null. This method can deal with
      * <code>Object</code> arrays and with primitive arrays. This value is one less than the size
-     * since arrays indices are 0-based. </p>
+     * since arrays indices are 0-based.
+     * </p>
      *
      * <pre>
      * ArrayUtils.lastIndex(null)            = -1
@@ -206,8 +200,8 @@ public final class ArrayUtils {
             if (index != 0) {
                 throw new IndexOutOfBoundsException("Index: " + index + ", Length: 0");
             }
-            Object joinedArray = Array.newInstance(element != null ? element.getClass()
-                    : Object.class, 1);
+            Object joinedArray =
+                    Array.newInstance(element != null ? element.getClass() : Object.class, 1);
             Array.set(joinedArray, 0, element);
             return (T[]) joinedArray;
         }
@@ -320,8 +314,8 @@ public final class ArrayUtils {
         assert (to >= from) : to + " - " + from;
         int length = getLength(array);
         if (from < 0 || to >= length) {
-            throw new IndexOutOfBoundsException("from: " + from + ", to: " + to + ", Length: "
-                    + length);
+            throw new IndexOutOfBoundsException(
+                "from: " + from + ", to: " + to + ", Length: " + length);
         }
         int remsize = to - from + 1;
         Object result = Array.newInstance(array.getClass().getComponentType(), length - remsize);
@@ -367,8 +361,8 @@ public final class ArrayUtils {
     private static Object copyArrayGrow1(final Object array, final Class<?> newArrayComponentType) {
         if (array != null) {
             int arrayLength = Array.getLength(array);
-            Object newArray = Array.newInstance(array.getClass().getComponentType(),
-                arrayLength + 1);
+            Object newArray =
+                    Array.newInstance(array.getClass().getComponentType(), arrayLength + 1);
             System.arraycopy(array, 0, newArray, 0, arrayLength);
             return newArray;
         } else {
@@ -393,95 +387,6 @@ public final class ArrayUtils {
             }
         }
         return true;
-    }
-
-    public static char[] copyOfRange(final char[] original, final int from, final int to) {
-        final int newLength = to - from;
-        if (newLength < 0) {
-            throw new IllegalArgumentException(from + " > " + to);
-        }
-        final char[] copy = new char[newLength];
-        System.arraycopy(original, from, copy, 0, Math.min(original.length - from, newLength));
-        return copy;
-    }
-
-    public static byte[] copyOfRange(final byte[] original, final int from, final int to) {
-        final int newLength = to - from;
-        if (newLength < 0) {
-            throw new IllegalArgumentException(from + " > " + to);
-        }
-        final byte[] copy = new byte[newLength];
-        System.arraycopy(original, from, copy, 0, Math.min(original.length - from, newLength));
-        return copy;
-    }
-
-    public static int[] copyOfRange(final int[] original, final int from, final int to) {
-        final int newLength = to - from;
-        if (newLength < 0) {
-            throw new IllegalArgumentException(from + " > " + to);
-        }
-        final int[] copy = new int[newLength];
-        System.arraycopy(original, from, copy, 0, Math.min(original.length - from, newLength));
-        return copy;
-    }
-
-    public static long[] copyOfRange(final long[] original, final int from, final int to) {
-        final int newLength = to - from;
-        if (newLength < 0) {
-            throw new IllegalArgumentException(from + " > " + to);
-        }
-        final long[] copy = new long[newLength];
-        System.arraycopy(original, from, copy, 0, Math.min(original.length - from, newLength));
-        return copy;
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T> T[] copyOfRange(final T[] original, final int from, final int to) {
-        return copyOfRange(original, from, to, (Class<T[]>) original.getClass());
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T, U> T[] copyOfRange(final U[] original, final int from, final int to,
-            final Class<? extends T[]> newType) {
-        final int newLength = to - from;
-        if (newLength < 0) {
-            throw new IllegalArgumentException(from + " > " + to);
-        }
-        final T[] copy = ((Object) newType == (Object) Object[].class) ? (T[]) new Object[newLength]
-                : (T[]) Array.newInstance(newType.getComponentType(), newLength);
-        System.arraycopy(original, from, copy, 0, Math.min(original.length - from, newLength));
-        return copy;
-    }
-
-    public static byte[] copyOf(final byte[] original, final int newLength) {
-        final byte[] copy = new byte[newLength];
-        System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
-        return copy;
-    }
-
-    public static int[] copyOf(final int[] original, final int newLength) {
-        final int[] copy = new int[newLength];
-        System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
-        return copy;
-    }
-
-    public static char[] copyOf(final char[] original, final int newLength) {
-        final char[] copy = new char[newLength];
-        System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
-        return copy;
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T> T[] copyOf(T[] original, int newLength) {
-        return (T[]) copyOf(original, newLength, original.getClass());
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T, U> T[] copyOf(U[] original, int newLength, Class<? extends T[]> newType) {
-        final T[] copy = ((Object) newType == (Object) Object[].class) ? (T[]) new Object[newLength]
-                : (T[]) Array.newInstance(newType.getComponentType(), newLength);
-        System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
-        return copy;
     }
 
     public static <T extends Comparable<T>> int binarySearch(final T[] a, final int fromIndex,
@@ -687,8 +592,8 @@ public final class ArrayUtils {
 
     public static <T> T max(final T[] array, final double[] scores) {
         if (array.length != scores.length) {
-            throw new IllegalArgumentException("array.length(" + array.length
-                    + ") != scores.length(" + scores.length + ")");
+            throw new IllegalArgumentException(
+                "array.length(" + array.length + ") != scores.length(" + scores.length + ")");
         }
         T obj = null;
         double d = Double.MIN_VALUE;
