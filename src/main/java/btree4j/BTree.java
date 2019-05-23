@@ -39,20 +39,14 @@ import btree4j.utils.collections.longs.PurgeOptObservableLongLRUMap;
 import btree4j.utils.io.FastMultiByteArrayOutputStream;
 import btree4j.utils.lang.ArrayUtils;
 import btree4j.utils.lang.Primitives;
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-
-import javax.annotation.CheckForNull;
-
 import com.google.common.annotations.Beta;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import javax.annotation.CheckForNull;
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * BTree represents a Variable Magnitude Simple-Prefix B+Tree File.
@@ -669,12 +663,12 @@ public class BTree extends Paged {
                     getChildNode(leftIdx).removeFrom(searchKey);
 
                     if (leftIdx < keys.length && leftIdx + 1 < ptrs.length)
-                        set(ArrayUtils.removeFrom(keys, leftIdx), ArrayUtils.removeFrom(ptrs, leftIdx + 1));
+                        set(ArrayUtils.copyOf(keys, leftIdx), ArrayUtils.copyOf(ptrs, leftIdx + 1));
                     break;
                 case LEAF:
                     leftIdx = (leftIdx < 0) ? -(leftIdx + 1) : leftIdx;
                     if (leftIdx < keys.length && leftIdx < ptrs.length)
-                        set(ArrayUtils.removeFrom(keys, leftIdx), ArrayUtils.removeFrom(ptrs, leftIdx));
+                        set(ArrayUtils.copyOf(keys, leftIdx), ArrayUtils.copyOf(ptrs, leftIdx));
                     this._next = -1;
                     break;
                 default:
@@ -682,7 +676,7 @@ public class BTree extends Paged {
                             "Invalid page type '" + ph.getStatus() + "' in removeValue");
             }
 
-            if (getParent() == null)
+            if (getParent() == null) 
                 while (_rootNode.ptrs.length == 1) {
                     _rootNode = _rootNode.getChildNode(0);
                 }

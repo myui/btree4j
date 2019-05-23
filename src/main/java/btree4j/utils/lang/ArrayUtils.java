@@ -301,28 +301,20 @@ public final class ArrayUtils {
      * @throws IndexOutOfBoundsException if the index is out of range (index < 0 || index >=
      *         array.length), or if the array is <code>null</code>.
      * @since 2.1
-     * @implNote Its dependance on removeFrom may slow down the function.
      */
     @SuppressWarnings("unchecked")
     public static <T> T[] remove(final T[] array, final int index) {
         int length = getLength(array);
-        Object result = Arrays.copyOf(removeFrom(array, index), length - 1);
+        if (index < 0 || index >= length) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Length: " + length);
+        }
+        Object result = Array.newInstance(array.getClass().getComponentType(), length - 1);
+        System.arraycopy(array, 0, result, 0, index);
         if (index < length - 1) {
             System.arraycopy(array, index + 1, result, index, length - index - 1);
         }
         return (T[]) result;
     }
-
-    public static <T> T[] removeFrom(final T[] array, final int index) {
-        int length = getLength(array);
-        if (index < 0 || index >= length) {
-            throw new IndexOutOfBoundsException("Index: " + index + ", Length: " + length);
-        }
-        Object result = Array.newInstance(array.getClass().getComponentType(), index);
-        System.arraycopy(array, 0, result, 0, index);
-        return (T[]) result;
-    }
-
 
     @SuppressWarnings("unchecked")
     public static <T> T[] remove(final T[] array, final int from, final int to) {
@@ -341,21 +333,13 @@ public final class ArrayUtils {
         return (T[]) result;
     }
 
-    /**
-     * @implNote Its dependance on removeFrom may slow down the function.
-     */
     public static long[] remove(final long[] vals, final int idx) {
-        long[] newVals = Arrays.copyOf(removeFrom(vals, idx), vals.length - 1);
-        if (idx < newVals.length) {
-            System.arraycopy(vals, idx + 1, newVals, idx, newVals.length - idx);
-        }
-        return newVals;
-    }
-
-    public static long[] removeFrom(final long[] vals, final int idx) {
-        long[] newVals = new long[idx];
+        long[] newVals = new long[vals.length - 1];
         if (idx > 0) {
             System.arraycopy(vals, 0, newVals, 0, idx);
+        }
+        if (idx < newVals.length) {
+            System.arraycopy(vals, idx + 1, newVals, idx, newVals.length - idx);
         }
         return newVals;
     }
@@ -480,6 +464,11 @@ public final class ArrayUtils {
         final int[] copy = new int[newLength];
         System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
         return copy;
+    }
+
+    public static long[] copyOf(final long[] vals, final int idx) {
+        return Arrays.copyOf(vals, idx);
+
     }
 
     public static char[] copyOf(final char[] original, final int newLength) {
