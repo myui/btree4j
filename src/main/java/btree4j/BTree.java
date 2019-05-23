@@ -667,8 +667,9 @@ public class BTree extends Paged {
                     break;
                 case LEAF:
                     leftIdx = (leftIdx < 0) ? -(leftIdx + 1) : leftIdx;
-                    if (leftIdx < keys.length && leftIdx < ptrs.length)
+                    if (leftIdx < keys.length && leftIdx < ptrs.length) {
                         set(ArrayUtils.copyOf(keys, leftIdx), ArrayUtils.copyOf(ptrs, leftIdx));
+                    }
                     this._next = -1;
                     break;
                 default:
@@ -676,10 +677,11 @@ public class BTree extends Paged {
                             "Invalid page type '" + ph.getStatus() + "' in removeValue");
             }
 
-            if (getParent() == null) 
+            if (getParent() == null) {
                 while (_rootNode.ptrs.length == 1) {
                     _rootNode = _rootNode.getChildNode(0);
                 }
+            }
         }
 
         /** @return pointer of left-most matched item */
