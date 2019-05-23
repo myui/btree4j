@@ -15,12 +15,11 @@
  */
 package btree4j.utils.io;
 
-import btree4j.utils.lang.ArrayUtils;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * Unsynchronized version of {@link ByteArrayOutputStream}.
@@ -47,13 +46,13 @@ public final class FastByteArrayOutputStream extends OutputStream {
     }
 
     public byte[] toByteArray() {
-        return ArrayUtils.copyOf(buf, count);
+        return Arrays.copyOf(buf, count);
     }
 
     public void write(int b) {
         int newcount = count + 1;
         if (newcount > buf.length) {
-            buf = ArrayUtils.copyOf(buf, Math.max(buf.length << 1, newcount));
+            buf = Arrays.copyOf(buf, Math.max(buf.length << 1, newcount));
         }
         buf[count] = (byte) b;
         this.count = newcount;
@@ -69,7 +68,7 @@ public final class FastByteArrayOutputStream extends OutputStream {
         }
         int newcount = count + len;
         if (newcount > buf.length) {
-            buf = ArrayUtils.copyOf(buf, Math.max(buf.length << 1, newcount));
+            buf = Arrays.copyOf(buf, Math.max(buf.length << 1, newcount));
         }
         System.arraycopy(b, off, buf, count, len);
         this.count = newcount;
@@ -82,7 +81,7 @@ public final class FastByteArrayOutputStream extends OutputStream {
     public void write(ByteBuffer b, int len) {
         final int newcount = count + len;
         if (newcount > buf.length) {
-            buf = ArrayUtils.copyOf(buf, Math.max(buf.length << 1, newcount));
+            buf = Arrays.copyOf(buf, Math.max(buf.length << 1, newcount));
         }
         b.get(buf, count, len);
         this.count = newcount;

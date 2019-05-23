@@ -19,11 +19,11 @@ import btree4j.Value;
 import btree4j.indexer.BasicIndexQuery.IndexConditionSW;
 import btree4j.utils.collections.IntStack;
 import btree4j.utils.io.FastMultiByteArrayOutputStream;
-import btree4j.utils.lang.ArrayUtils;
 import btree4j.utils.lang.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public final class ByteLikeIndexQuery extends IndexConditionSW {
 
@@ -95,7 +95,7 @@ public final class ByteLikeIndexQuery extends IndexConditionSW {
         if (offset == 0 && length == data.length) {
             target = data;
         } else {
-            target = ArrayUtils.copyOfRange(data, offset, offset + length);
+            target = Arrays.copyOfRange(data, offset, offset + length);
         }
         return match(target, _patterns, _types, 0, 0);
     }

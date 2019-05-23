@@ -45,6 +45,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Map;
 
+import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
 
 import org.apache.commons.logging.Log;
@@ -65,12 +67,15 @@ public abstract class Paged {
 
     //--------------------------------------------
 
+    @Nonnull
     private final Map<Long, Reference<Page>> _pages;
     {
         _pages = new MapMaker().initialCapacity(64).weakKeys().weakValues().makeMap();
     }
 
+    @Nonnull
     private final FileHeader _fileHeader;
+    @Nonnull
     protected final File _file;
 
     //--------------------------------------------
@@ -82,15 +87,16 @@ public abstract class Paged {
 
     //--------------------------------------------
 
-    public Paged(File file) {
+    public Paged(@Nonnull File file) {
         this(file, DEFAULT_PAGESIZE);
     }
 
-    public Paged(File file, int pageSize) {
+    public Paged(@Nonnull File file, @Nonnegative int pageSize) {
         this._fileHeader = createFileHeader(pageSize);
         this._file = file;
     }
 
+    @Nonnull
     public File getFile() {
         return _file;
     }
@@ -131,6 +137,7 @@ public abstract class Paged {
         }
     }
 
+    @Nonnull
     protected final RandomAccessFile ensureResourceOpen() throws BTreeException {
         if (_raf == null) {
             try {
@@ -203,17 +210,20 @@ public abstract class Paged {
      *
      * @return a new FileHeader
      */
-    protected abstract FileHeader createFileHeader(int pageSize);
+    @Nonnull
+    protected abstract FileHeader createFileHeader(@Nonnegative int pageSize);
 
     /**
      * createPageHeader must be implemented by a Paged implementation in order to create an
      * appropriate subclass instance of a PageHeader.
      */
+    @Nonnull
     protected abstract PageHeader createPageHeader();
 
     /**
      * getPage returns the page specified by pageNum.
      */
+    @Nonnull
     protected final Page getPage(long pageNum) throws BTreeException {
         Page p = null;
         // if not check if it's already loaded in the page cache
@@ -238,6 +248,7 @@ public abstract class Paged {
      * getFreePage returns the first free Page from secondary storage. If no Pages are available,
      * the file is grown as appropriate.
      */
+    @Nonnull
     protected final Page getFreePage() throws BTreeException {
         Page p = null;
         // Synchronize read and write to the fileHeader.firstFreePage
@@ -266,7 +277,7 @@ public abstract class Paged {
     /**
      * unlinkPages unlinks a set of pages starting at the specified Page.
      */
-    protected final void unlinkPages(Page page) throws BTreeException {
+    protected final void unlinkPages(@Nonnull Page page) throws BTreeException {
         Page nextPage = page;
         if (nextPage != null) {
             // Walk the chain and add it to the unused list
@@ -291,12 +302,12 @@ public abstract class Paged {
     }
 
     /**
-     * writeValue writes the multi-Paged Value starting at the specified Page.
+     * writeValue writes the multi-paged Value starting at the specified Page.
      *
      * @param page The starting Page
      * @param value The Value to write
      */
-    public final void writeValue(Page page, Value value) throws BTreeException {
+    public final void writeValue(@Nonnull Page page, @Nonnull Value value) throws BTreeException {
         InputStream is = value.getInputStream();
 
         // Write as much as we can onto the primary page.
@@ -365,12 +376,12 @@ public abstract class Paged {
      * @param page The starting page number
      * @param value The Value to write
      */
-    public final void writeValue(long page, Value value) throws BTreeException {
+    public final void writeValue(long page, @Nonnull Value value) throws BTreeException {
         writeValue(getPage(page), value);
     }
 
     @Deprecated
-    public final long writeValue(Value value) throws BTreeException {
+    public final long writeValue(@Nonnull Value value) throws BTreeException {
         Page p = getFreePage();
         writeValue(p, value);
         return p.getPageNum();
@@ -382,7 +393,8 @@ public abstract class Paged {
      * @param page The starting Page
      * @return The Value
      */
-    public final Value readValue(Page page) throws BTreeException {
+    @Nonnull
+    public final Value readValue(@Nonnull Page page) throws BTreeException {
         PageHeader sph = page.getPageHeader();
         FastMultiByteArrayOutputStream bos =
                 new FastMultiByteArrayOutputStream(sph.getRecordLength());
@@ -415,10 +427,12 @@ public abstract class Paged {
      * @return The Value
      */
     @Deprecated
+    @Nonnull
     public final Value readValue(long page) throws BTreeException {
         return readValue(getPage(page));
     }
 
+    @Nonnull
     protected FileHeader getFileHeader() {
         return _fileHeader;
     }

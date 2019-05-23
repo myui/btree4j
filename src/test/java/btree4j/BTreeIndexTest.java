@@ -156,7 +156,7 @@ public class BTreeIndexTest {
             keys[i] = rand.nextInt(max);
         }
         Arrays.sort(keys);
-        final int[] values = ArrayUtils.copy(keys);
+        final int[] values = keys.clone();
         ArrayUtils.shuffle(values);
 
         final StopWatch watchdog1 = new StopWatch("Construction of " + repeat + " objects");

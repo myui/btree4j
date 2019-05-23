@@ -46,14 +46,6 @@ public final class ArrayUtils {
 
     private ArrayUtils() {}
 
-    public static <T> T[] copy(final T[] original) {
-        return copyOf(original, original.length);
-    }
-
-    public static int[] copy(final int[] original) {
-        return copyOf(original, original.length);
-    }
-
     /**
      * <p>
      * Returns the length of the specified array. This method can deal with <code>Object</code>
@@ -115,7 +107,8 @@ public final class ArrayUtils {
         return INDEX_NOT_FOUND;
     }
 
-    public static int indexOf(final int[] array, final int valueToFind, int startIndex, int endIndex) {
+    public static int indexOf(final int[] array, final int valueToFind, int startIndex,
+            int endIndex) {
         if (array == null) {
             return INDEX_NOT_FOUND;
         }
@@ -149,7 +142,8 @@ public final class ArrayUtils {
     /**
      * Returns the last index of the given array or -1 if empty or null. This method can deal with
      * <code>Object</code> arrays and with primitive arrays. This value is one less than the size
-     * since arrays indices are 0-based. </p>
+     * since arrays indices are 0-based.
+     * </p>
      *
      * <pre>
      * ArrayUtils.lastIndex(null)            = -1
@@ -207,8 +201,8 @@ public final class ArrayUtils {
             if (index != 0) {
                 throw new IndexOutOfBoundsException("Index: " + index + ", Length: 0");
             }
-            Object joinedArray = Array.newInstance(element != null ? element.getClass()
-                    : Object.class, 1);
+            Object joinedArray =
+                    Array.newInstance(element != null ? element.getClass() : Object.class, 1);
             Array.set(joinedArray, 0, element);
             return (T[]) joinedArray;
         }
@@ -321,8 +315,8 @@ public final class ArrayUtils {
         assert (to >= from) : to + " - " + from;
         int length = getLength(array);
         if (from < 0 || to >= length) {
-            throw new IndexOutOfBoundsException("from: " + from + ", to: " + to + ", Length: "
-                    + length);
+            throw new IndexOutOfBoundsException(
+                "from: " + from + ", to: " + to + ", Length: " + length);
         }
         int remsize = to - from + 1;
         Object result = Array.newInstance(array.getClass().getComponentType(), length - remsize);
@@ -368,8 +362,8 @@ public final class ArrayUtils {
     private static Object copyArrayGrow1(final Object array, final Class<?> newArrayComponentType) {
         if (array != null) {
             int arrayLength = Array.getLength(array);
-            Object newArray = Array.newInstance(array.getClass().getComponentType(),
-                arrayLength + 1);
+            Object newArray =
+                    Array.newInstance(array.getClass().getComponentType(), arrayLength + 1);
             System.arraycopy(array, 0, newArray, 0, arrayLength);
             return newArray;
         } else {
@@ -698,8 +692,8 @@ public final class ArrayUtils {
 
     public static <T> T max(final T[] array, final double[] scores) {
         if (array.length != scores.length) {
-            throw new IllegalArgumentException("array.length(" + array.length
-                    + ") != scores.length(" + scores.length + ")");
+            throw new IllegalArgumentException(
+                "array.length(" + array.length + ") != scores.length(" + scores.length + ")");
         }
         T obj = null;
         double d = Double.MIN_VALUE;
