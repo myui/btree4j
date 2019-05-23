@@ -682,6 +682,7 @@ public class BTree extends Paged {
                     _rootNode = _rootNode.getChildNode(0);
                 }
             }
+            calculateDataLength();
         }
 
         /** @return pointer of left-most matched item */
