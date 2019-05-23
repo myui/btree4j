@@ -17,6 +17,9 @@ package btree4j;
 
 import btree4j.utils.io.FileUtils;
 import btree4j.utils.lang.PrintUtils;
+import org.junit.Assert;
+import org.junit.Test;
+import utility.Range;
 
 import java.io.File;
 import java.util.HashMap;
@@ -24,14 +27,95 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import static btree4j.BTree.KEY_NOT_FOUND;
+import static utility.Utils.MAXN;
+import static utility.Utils.getRangeOfTen;
 
 public class BTreeTest {
     private static final boolean DEBUG = true;
-    final private int MAXN = 5000 * 100;
+
+    @Test
+    public void shouldAddThenPeekMin() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BTreeTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
+        }
+
+        BTree btree = new BTree(tmpFile);
+        btree.init(/* bulkload */ false);
+
+        Range range = getRangeOfTen(MAXN);
+        BTreeKey keyValue;
+        for (int i = range.getMax() - 1; i >= range.getMin(); i--) {
+            Value k = new Value("k" + i);
+            btree.addValue(k, i);
+            keyValue = btree.peekMinimum();
+            Assert.assertEquals(keyValue.getPointer().longValue(), i);
+            Assert.assertTrue(keyValue.getKey().equals(k));
+        }
+    }
+    @Test
+    public void shouldAddThenPeekAndPopMin() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BTreeTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
+        }
+
+        BTree btree = new BTree(tmpFile);
+        btree.init(/* bulkload */ false);
+
+        Range range = getRangeOfTen(MAXN);
+        BTreeKey peekKey, popKey;
+        for (int i = range.getMin(); i <= range.getMax(); i++) {
+            Value k = new Value("k" + i);
+            btree.addValue(k, i);
+        }
+
+        for (int i = range.getMin(); i <= range.getMax(); i++) {
+            Value k = new Value("k" + i);
+            peekKey = btree.peekMinimum();
+            Assert.assertEquals(peekKey.getPointer().longValue(), i);
+            Assert.assertTrue(peekKey.getKey().equals(k));
+            popKey = btree.popMinimum();
+            Assert.assertEquals(peekKey.getKey(), popKey.getKey());
+            Assert.assertEquals(peekKey.getPointer(), popKey.getPointer());
+        }
+    }
+    @Test
+    public void shouldAddInReverseThenPeekAndPopMin() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BTreeTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
+        }
+
+        BTree btree = new BTree(tmpFile);
+        btree.init(/* bulkload */ false);
+
+        Range range = getRangeOfTen(MAXN);
+        BTreeKey peekKey, popKey;
+        for (int i = range.getMax(); i >= range.getMin(); i--) {
+            Value k = new Value("k" + i);
+            btree.addValue(k, i);
+        }
+        for (int i = range.getMin(); i <= range.getMax(); i++) {
+            Value k = new Value("k" + i);
+            peekKey = btree.peekMinimum();
+            Assert.assertEquals(peekKey.getPointer().longValue(), i);
+            Assert.assertTrue(peekKey.getKey().equals(k));
+            popKey = btree.popMinimum();
+            Assert.assertEquals(peekKey.getKey(), popKey.getKey());
+            Assert.assertEquals(peekKey.getPointer(), popKey.getPointer());
+        }
+    }
 
     @Test
     public void shouldAdd() throws BTreeException {
@@ -56,6 +140,34 @@ public class BTreeTest {
             long actual = btree.findValue(k);
             Assert.assertEquals(i, actual);
         }
+    }
+    @Test
+    public void shouldAddRemovePeekAndPopMin() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BTreeTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
+        }
+
+        BTree btree = new BTree(tmpFile);
+        btree.init(/* bulkload */ false);
+
+        Range range = new Range(1, 3);
+        BTreeKey peekKey, popKey;
+        for (int i = range.getMin(); i <= range.getMax(); i++) {
+            Value k = new Value("k" + i);
+            btree.addValue(k, i);
+        }
+
+        btree.removeValue(new Value("k" + 1));
+        peekKey = btree.peekMinimum();
+        Assert.assertEquals(peekKey.getPointer().longValue(), 2);
+        Assert.assertTrue(peekKey.getKey().equals(new Value("k" + 2)));
+        popKey = btree.popMinimum();
+        Assert.assertEquals(peekKey.getKey(), popKey.getKey());
+        Assert.assertEquals(peekKey.getPointer(), popKey.getPointer());
     }
 
     @Test
