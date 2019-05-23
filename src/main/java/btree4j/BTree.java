@@ -51,6 +51,7 @@ import java.util.Arrays;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -86,9 +87,11 @@ public class BTree extends Paged {
      * Cache contains weak references to the BTreeNode objects, keys are page numbers (Long
      * objects). Access synchronized by this map itself.
      */
+    @Nonnull
     private final PurgeOptObservableLongLRUMap<BTreeNode> _cache;
     private final int numNodeCaches;
 
+    @Nonnull
     private final BTreeFileHeader _fileHeader;
 
     private BTreeRootInfo _rootInfo;
@@ -144,7 +147,8 @@ public class BTree extends Paged {
 
         Synchronizer() {}
 
-        public void cleanup(long key, BTreeNode node) {
+        @Override
+        public void cleanup(long key, @Nonnull BTreeNode node) {
             if (!node.dirty) {
                 return;
             }
@@ -553,15 +557,12 @@ public class BTree extends Paged {
             }
         }
 
-        long addValue(Value value, long pointer) throws IOException, BTreeException {
-            if (value == null) {
-                throw new IllegalArgumentException("Can't add a null Value");
-            }
-            int idx = searchRightmostKey(keys, value, keys.length);
+        long addValue(@Nonnull Value key, final long pointer) throws IOException, BTreeException {
+            int idx = searchRightmostKey(keys, key, keys.length);
             switch (ph.getStatus()) {
                 case BRANCH: {
                     idx = idx < 0 ? -(idx + 1) : idx + 1;
-                    return getChildNode(idx).addValue(value, pointer);
+                    return getChildNode(idx).addValue(key, pointer);
                 }
                 case LEAF: {
                     final boolean found = idx >= 0;
@@ -569,18 +570,18 @@ public class BTree extends Paged {
                     if (found) {
                         if (!isDuplicateAllowed()) {
                             throw new BTreeCorruptException(
-                                "Attempt to add duplicate key to the unique index: " + value);
+                                "Attempt to add duplicate key to the unique index: " + key);
                         }
                         oldPtr = ptrs[idx];
-                        value = keys[idx];
+                        key = keys[idx]; // use the existing key object
                         idx = idx + 1;
                     } else {
                         oldPtr = -1;
                         idx = -(idx + 1);
                     }
-                    set(ArrayUtils.<Value>insert(keys, idx, value),
+                    set(ArrayUtils.<Value>insert(keys, idx, key),
                         ArrayUtils.insert(ptrs, idx, pointer));
-                    incrDataLength(value, pointer);
+                    incrDataLength(key, pointer);
 
                     // Check to see if we've exhausted the block
                     if (needSplit()) {
@@ -715,6 +716,7 @@ public class BTree extends Paged {
          * Internal (to the BTreeNode) method. Because this method is called only by BTreeNode
          * itself, no synchronization done inside of this method.
          */
+        @Nullable
         private BTreeNode getChildNode(final int idx) throws BTreeException {
             if (ph.getStatus() == BRANCH && idx >= 0 && idx < ptrs.length) {
                 return getBTreeNode(root, ptrs[idx], this);
@@ -859,7 +861,7 @@ public class BTree extends Paged {
         }
 
         /** Set leaves linked */
-        private void setLeavesLinked(final BTreeNode left, final BTreeNode right)
+        private void setLeavesLinked(@Nonnull final BTreeNode left, @Nonnull final BTreeNode right)
                 throws BTreeException {
             final long leftPageNum = left.page.getPageNum();
             final long rightPageNum = right.page.getPageNum();
@@ -874,7 +876,7 @@ public class BTree extends Paged {
             right._prev = leftPageNum;
         }
 
-        private void promoteValue(final Value key, final long leftPtr, final long rightPtr)
+        private void promoteValue(@Nonnull final Value key, final long leftPtr, final long rightPtr)
                 throws IOException, BTreeException {
             final int leftIdx = searchRightmostKey(keys, key, keys.length);
             int insertPoint = (leftIdx < 0) ? -(leftIdx + 1) : leftIdx + 1;
@@ -905,7 +907,7 @@ public class BTree extends Paged {
         }
 
         /** Gets shortest-possible separator for the pivot */
-        private Value getSeparator(final Value value1, final Value value2) {
+        private Value getSeparator(@Nonnull final Value value1, @Nonnull final Value value2) {
             int idx = value1.compareTo(value2);
             if (idx == 0) {
                 return value1.clone();
@@ -918,7 +920,7 @@ public class BTree extends Paged {
         /**
          * Sets values and pointers. Internal (to the BTreeNode) method, not synchronized.
          */
-        private void set(final Value[] values, final long[] ptrs) {
+        private void set(@Nonnull final Value[] values, @Nonnull final long[] ptrs) {
             final int vlen = values.length;
             if (vlen > Short.MAX_VALUE) {
                 throw new IllegalArgumentException("entries exceeds limit: " + vlen);
@@ -948,7 +950,8 @@ public class BTree extends Paged {
             this.dirty = dirt;
         }
 
-        private Value getPrefix(final Value v1, final Value v2) {
+        @Nonnull
+        private Value getPrefix(@Nonnull final Value v1, @Nonnull final Value v2) {
             final int idx = Math.abs(v1.compareTo(v2)) - 1;
             if (idx > 0) {
                 final byte[] d2 = v2.getData();
@@ -1088,14 +1091,14 @@ public class BTree extends Paged {
             return datalen;
         }
 
-        private void incrDataLength(final Value value, final long ptr) {
+        private void incrDataLength(@Nonnull final Value key, final long ptr) {
             int datalen = currentDataLen;
             if (datalen == -1) {
                 datalen = calculateDataLength();
             }
-            final int refcnt = value.incrRefCount();
+            final int refcnt = key.incrRefCount();
             if (refcnt == 1) {
-                datalen += value.getLength();
+                datalen += key.getLength();
             }
             datalen += VariableByteCodec.requiredBytes(ptr);
             datalen += 4 /* key size */;
@@ -1113,10 +1116,7 @@ public class BTree extends Paged {
         }
 
         /** find lest-most value which matches to the key */
-        long findValue(Value searchKey) throws BTreeException {
-            if (searchKey == null) {
-                throw new BTreeException("Can't search on null Value");
-            }
+        long findValue(@Nonnull Value searchKey) throws BTreeException {
             int idx = searchLeftmostKey(keys, searchKey, keys.length);
             switch (ph.getStatus()) {
                 case BRANCH:
@@ -1162,7 +1162,8 @@ public class BTree extends Paged {
         /**
          * Scan the leaf node. Note that keys might be shortest-possible value.
          */
-        void scanLeaf(@Nonnull IndexQuery query, @Nonnull BTreeCallback callback, boolean edge) {
+        void scanLeaf(@Nonnull final IndexQuery query, @Nonnull final BTreeCallback callback,
+                final boolean edge) {
             assert (ph.getStatus() == LEAF) : ph.getStatus();
             Value[] conds = query.getOperands();
             switch (query.getOperator()) {
@@ -1300,7 +1301,8 @@ public class BTree extends Paged {
             }
         }
 
-        BTreeNode getLeafNode(SearchType searchType, Value key) throws IOException, BTreeException {
+        BTreeNode getLeafNode(@Nonnull final SearchType searchType, @Nonnull final Value key)
+                throws IOException, BTreeException {
             final byte nodeType = ph.getStatus();
             switch (nodeType) {
                 case BRANCH:
