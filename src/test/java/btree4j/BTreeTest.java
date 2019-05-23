@@ -49,7 +49,7 @@ public class BTreeTest {
 
         Range range = getRangeOfTen(MAXN);
         BTreeKey keyValue;
-        for (int i = range.getMax() - 1; i >= range.getMin(); i--) {
+        for (int i = range.getMax(); i >= range.getMin(); i--) {
             Value k = new Value("k" + i);
             btree.addValue(k, i);
             keyValue = btree.peekMinimum();

@@ -46,14 +46,6 @@ public final class ArrayUtils {
 
     private ArrayUtils() {}
 
-    public static <T> T[] copy(final T[] original) {
-        return copyOf(original, original.length);
-    }
-
-    public static int[] copy(final int[] original) {
-        return copyOf(original, original.length);
-    }
-
     /**
      * <p>
      * Returns the length of the specified array. This method can deal with <code>Object</code>
@@ -115,7 +107,8 @@ public final class ArrayUtils {
         return INDEX_NOT_FOUND;
     }
 
-    public static int indexOf(final int[] array, final int valueToFind, int startIndex, int endIndex) {
+    public static int indexOf(final int[] array, final int valueToFind, int startIndex,
+            int endIndex) {
         if (array == null) {
             return INDEX_NOT_FOUND;
         }
@@ -149,7 +142,8 @@ public final class ArrayUtils {
     /**
      * Returns the last index of the given array or -1 if empty or null. This method can deal with
      * <code>Object</code> arrays and with primitive arrays. This value is one less than the size
-     * since arrays indices are 0-based. </p>
+     * since arrays indices are 0-based.
+     * </p>
      *
      * <pre>
      * ArrayUtils.lastIndex(null)            = -1
@@ -207,8 +201,8 @@ public final class ArrayUtils {
             if (index != 0) {
                 throw new IndexOutOfBoundsException("Index: " + index + ", Length: 0");
             }
-            Object joinedArray = Array.newInstance(element != null ? element.getClass()
-                    : Object.class, 1);
+            Object joinedArray =
+                    Array.newInstance(element != null ? element.getClass() : Object.class, 1);
             Array.set(joinedArray, 0, element);
             return (T[]) joinedArray;
         }
@@ -301,36 +295,28 @@ public final class ArrayUtils {
      * @throws IndexOutOfBoundsException if the index is out of range (index < 0 || index >=
      *         array.length), or if the array is <code>null</code>.
      * @since 2.1
-     * @implNote Its dependance on removeFrom may slow down the function.
      */
     @SuppressWarnings("unchecked")
     public static <T> T[] remove(final T[] array, final int index) {
         int length = getLength(array);
-        Object result = Arrays.copyOf(removeFrom(array, index), length - 1);
+        if (index < 0 || index >= length) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Length: " + length);
+        }
+        Object result = Array.newInstance(array.getClass().getComponentType(), length - 1);
+        System.arraycopy(array, 0, result, 0, index);
         if (index < length - 1) {
             System.arraycopy(array, index + 1, result, index, length - index - 1);
         }
         return (T[]) result;
     }
 
-    public static <T> T[] removeFrom(final T[] array, final int index) {
-        int length = getLength(array);
-        if (index < 0 || index >= length) {
-            throw new IndexOutOfBoundsException("Index: " + index + ", Length: " + length);
-        }
-        Object result = Array.newInstance(array.getClass().getComponentType(), index);
-        System.arraycopy(array, 0, result, 0, index);
-        return (T[]) result;
-    }
-
-
     @SuppressWarnings("unchecked")
     public static <T> T[] remove(final T[] array, final int from, final int to) {
         assert (to >= from) : to + " - " + from;
         int length = getLength(array);
         if (from < 0 || to >= length) {
-            throw new IndexOutOfBoundsException("from: " + from + ", to: " + to + ", Length: "
-                    + length);
+            throw new IndexOutOfBoundsException(
+                "from: " + from + ", to: " + to + ", Length: " + length);
         }
         int remsize = to - from + 1;
         Object result = Array.newInstance(array.getClass().getComponentType(), length - remsize);
@@ -341,21 +327,13 @@ public final class ArrayUtils {
         return (T[]) result;
     }
 
-    /**
-     * @implNote Its dependance on removeFrom may slow down the function.
-     */
     public static long[] remove(final long[] vals, final int idx) {
-        long[] newVals = Arrays.copyOf(removeFrom(vals, idx), vals.length - 1);
-        if (idx < newVals.length) {
-            System.arraycopy(vals, idx + 1, newVals, idx, newVals.length - idx);
-        }
-        return newVals;
-    }
-
-    public static long[] removeFrom(final long[] vals, final int idx) {
-        long[] newVals = new long[idx];
+        long[] newVals = new long[vals.length - 1];
         if (idx > 0) {
             System.arraycopy(vals, 0, newVals, 0, idx);
+        }
+        if (idx < newVals.length) {
+            System.arraycopy(vals, idx + 1, newVals, idx, newVals.length - idx);
         }
         return newVals;
     }
@@ -384,8 +362,8 @@ public final class ArrayUtils {
     private static Object copyArrayGrow1(final Object array, final Class<?> newArrayComponentType) {
         if (array != null) {
             int arrayLength = Array.getLength(array);
-            Object newArray = Array.newInstance(array.getClass().getComponentType(),
-                arrayLength + 1);
+            Object newArray =
+                    Array.newInstance(array.getClass().getComponentType(), arrayLength + 1);
             System.arraycopy(array, 0, newArray, 0, arrayLength);
             return newArray;
         } else {
@@ -480,6 +458,11 @@ public final class ArrayUtils {
         final int[] copy = new int[newLength];
         System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
         return copy;
+    }
+
+    public static long[] copyOf(final long[] vals, final int idx) {
+        return Arrays.copyOf(vals, idx);
+
     }
 
     public static char[] copyOf(final char[] original, final int newLength) {
@@ -709,8 +692,8 @@ public final class ArrayUtils {
 
     public static <T> T max(final T[] array, final double[] scores) {
         if (array.length != scores.length) {
-            throw new IllegalArgumentException("array.length(" + array.length
-                    + ") != scores.length(" + scores.length + ")");
+            throw new IllegalArgumentException(
+                "array.length(" + array.length + ") != scores.length(" + scores.length + ")");
         }
         T obj = null;
         double d = Double.MIN_VALUE;
