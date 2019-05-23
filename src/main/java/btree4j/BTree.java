@@ -929,12 +929,12 @@ public class BTree extends Paged {
             this.ptrs = ptrs;
             this.ph.setValueCount((short) vlen);
             if (vlen > 1) {
-                final int prevPreixLen = ph.getPrefixLength();
+                final int prevPrefixLen = ph.getPrefixLength();
                 this.prefix = getPrefix(values[0], values[vlen - 1]);
                 final int prefixLen = prefix.getLength();
                 assert (prefixLen <= Short.MAX_VALUE) : prefixLen;
-                if (prefixLen != prevPreixLen) {
-                    int diff = prefixLen - prevPreixLen;
+                if (prefixLen != prevPrefixLen) {
+                    int diff = prefixLen - prevPrefixLen;
                     currentDataLen += diff;
                     ph.setPrefixLength((short) prefixLen);
                 }
