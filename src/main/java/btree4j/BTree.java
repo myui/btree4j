@@ -49,6 +49,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import javax.annotation.CheckForNull;
+import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -92,15 +94,16 @@ public class BTree extends Paged {
     private BTreeRootInfo _rootInfo;
     private BTreeNode _rootNode;
 
-    public BTree(File file) {
+    public BTree(@Nonnull File file) {
         this(file, true);
     }
 
-    public BTree(File file, boolean duplicateAllowed) {
+    public BTree(@Nonnull File file, boolean duplicateAllowed) {
         this(file, DEFAULT_PAGESIZE, DEFAULT_IN_MEMORY_NODES, duplicateAllowed);
     }
 
-    public BTree(File file, int pageSize, int caches, boolean duplicateAllowed) {
+    public BTree(@Nonnull File file, @Nonnegative int pageSize, int caches,
+            boolean duplicateAllowed) {
         super(file, pageSize);
         BTreeFileHeader fh = getFileHeader();
         fh.incrTotalPageCount(); // for root page
@@ -201,16 +204,15 @@ public class BTree extends Paged {
 
     /**
      * addValue adds a Value to the BTree and associates a pointer with it. The pointer can be used
-     * for referencing any type of data, it just so happens that Xindice uses it for referencing
-     * pages of associated data in the BTree file or other files.
+     * for referencing any type of data.
      *
-     * @param value The Value to add
+     * @param key The Value to add
      * @param pointer The pointer to associate with it
      * @return The previous value for the pointer (or -1)
      */
-    public synchronized long addValue(Value value, long pointer) throws BTreeException {
+    public synchronized long addValue(@Nonnull Value key, long pointer) throws BTreeException {
         try {
-            return _rootNode.addValue(value, pointer);
+            return _rootNode.addValue(key, pointer);
         } catch (IOException e) {
             throw new BTreeException(e);
         }
@@ -219,20 +221,25 @@ public class BTree extends Paged {
     /**
      * removeValue removes a Value from the BTree and returns the associated pointer for it.
      *
-     * @param value The Value to remove
+     * @param key The Value to remove
      * @return The pointer that was associated with it
      */
-    public synchronized long removeValue(Value value) throws BTreeException {
+    public synchronized long removeValue(@Nonnull Value key) throws BTreeException {
         try {
-            return _rootNode.removeValue(value);
+            return _rootNode.removeValue(key);
         } catch (IOException e) {
             throw new BTreeException(e);
         }
     }
 
-    public synchronized long[] removeValue(Value value, long pointer) throws BTreeException {
+    /**
+     * Removed specified key/pointer pair(s) in the index.
+     *
+     * @return The number of matched items.
+     */
+    public synchronized int removeValue(@Nonnull Value key, long pointer) throws BTreeException {
         try {
-            return _rootNode.removeValue(value, pointer);
+            return _rootNode.removeValue(key, pointer);
         } catch (IOException e) {
             throw new BTreeException(e);
         }
@@ -241,11 +248,11 @@ public class BTree extends Paged {
     /**
      * findValue finds a Value in the BTree and returns the associated pointer for it.
      *
-     * @param value The Value to find
-     * @return The pointer that was associated with it
+     * @param key The key to find
+     * @return The pointer associated with the given key
      */
-    public synchronized long findValue(Value value) throws BTreeException {
-        return _rootNode.findValue(value);
+    public synchronized long findValue(@Nonnull Value key) throws BTreeException {
+        return _rootNode.findValue(key);
     }
 
     public enum SearchType {
@@ -259,11 +266,8 @@ public class BTree extends Paged {
      * @param query The IndexQuery to use
      * @param callback The callback instance
      */
-    public synchronized void search(IndexQuery query, BTreeCallback callback)
+    public synchronized void search(@Nonnull IndexQuery query, @Nonnull BTreeCallback callback)
             throws BTreeException {
-        if (query == null) {
-            throw new IllegalArgumentException();
-        }
         final BTreeNode root = _rootNode;
         final Value[] keys = query.getOperands();
         final int op = query.getOperator();
@@ -331,8 +335,8 @@ public class BTree extends Paged {
         }
     }
 
-    private final void scanRange(BTreeNode left, BTreeNode right, IndexQuery query,
-            BTreeCallback callback) throws BTreeException {
+    private final void scanRange(@Nonnull BTreeNode left, @Nonnull BTreeNode right,
+            @Nonnull IndexQuery query, @Nonnull BTreeCallback callback) throws BTreeException {
         final long rightmostPageNum = right.page.getPageNum();
         if (LOG.isDebugEnabled()) {
             LOG.debug(
@@ -379,7 +383,7 @@ public class BTree extends Paged {
     }
 
     /**
-     * getRootNode retreives the BTree node for the specified root object.
+     * getRootNode retrieves the BTree node for the specified root object.
      *
      * @param root The root object to retrieve with
      * @return The root node
@@ -672,9 +676,9 @@ public class BTree extends Paged {
             }
         }
 
-        /** @return pointer of matched items */
+        /** @return the number of matched items */
         @Deprecated
-        long[] removeValue(Value searchKey, long pointer) throws IOException, BTreeException {
+        int removeValue(Value searchKey, long pointer) throws IOException, BTreeException {
             int leftIdx = searchLeftmostKey(keys, searchKey, keys.length);
             int rightIdx = isDuplicateAllowed() ? searchRightmostKey(keys, searchKey, keys.length)
                     : leftIdx;
@@ -686,25 +690,19 @@ public class BTree extends Paged {
                 }
                 case LEAF: {
                     if (leftIdx < 0) {
-                        return new long[0];
+                        return 0;
                     } else {
                         int founds = 0;
-                        long[] matched = new long[rightIdx - leftIdx + 1];
                         for (int i = leftIdx; i <= rightIdx; i++) {
                             long p = ptrs[i];
                             if (p == pointer) {
                                 set(ArrayUtils.remove(keys, i), ArrayUtils.remove(ptrs, i));
                                 decrDataLength(searchKey);
-                                matched[founds++] = p;
                                 i--;
                                 rightIdx--;
                             }
                         }
-                        if (founds == 0) {
-                            return new long[0];
-                        }
-                        return (founds == matched.length) ? matched
-                                : Arrays.copyOfRange(matched, 0, founds);
+                        return founds;
                     }
                 }
                 default:
@@ -1164,7 +1162,7 @@ public class BTree extends Paged {
         /**
          * Scan the leaf node. Note that keys might be shortest-possible value.
          */
-        void scanLeaf(IndexQuery query, BTreeCallback callback, boolean edge) {
+        void scanLeaf(@Nonnull IndexQuery query, @Nonnull BTreeCallback callback, boolean edge) {
             assert (ph.getStatus() == LEAF) : ph.getStatus();
             Value[] conds = query.getOperands();
             switch (query.getOperator()) {

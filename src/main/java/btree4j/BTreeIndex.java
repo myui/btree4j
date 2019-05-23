@@ -378,6 +378,7 @@ public class BTreeIndex extends BTree {
             dataCache.put(page.getPageNum(), this);
         }
 
+        @Nullable
         public byte[] get(int tidx) {
             if (tidx >= tuples.size()) {
                 return null; // REVIEWME
