@@ -1115,15 +1115,15 @@ public class BTree extends Paged {
         }
 
         /** find lest-most value which matches to the key */
-        long findValue(Value serarchKey) throws BTreeException {
-            if (serarchKey == null) {
+        long findValue(Value searchKey) throws BTreeException {
+            if (searchKey == null) {
                 throw new BTreeException("Can't search on null Value");
             }
-            int idx = searchLeftmostKey(keys, serarchKey, keys.length);
+            int idx = searchLeftmostKey(keys, searchKey, keys.length);
             switch (ph.getStatus()) {
                 case BRANCH:
                     idx = idx < 0 ? -(idx + 1) : idx + 1;
-                    return getChildNode(idx).findValue(serarchKey);
+                    return getChildNode(idx).findValue(searchKey);
                 case LEAF:
                     if (idx < 0) {
                         return KEY_NOT_FOUND;
@@ -1134,7 +1134,7 @@ public class BTree extends Paged {
                                 leftmostNode = getBTreeNode(root, leftmostNode._prev);
                                 final Value[] lmKeys = leftmostNode.keys;
                                 assert (lmKeys.length > 0);
-                                if (!lmKeys[0].equals(serarchKey)) {
+                                if (!lmKeys[0].equals(searchKey)) {
                                     break;
                                 }
                                 final int prevLookup = leftmostNode.ph.getLeftLookup();
@@ -1143,11 +1143,11 @@ public class BTree extends Paged {
                                 }
                             }
                             final Value[] lmKeys = leftmostNode.keys;
-                            final int lmIdx = leftmostNode.searchLeftmostKey(lmKeys, serarchKey,
+                            final int lmIdx = leftmostNode.searchLeftmostKey(lmKeys, searchKey,
                                 lmKeys.length);
                             if (lmIdx < 0) {
                                 throw new BTreeCorruptException(
-                                    "Duplicated key was not found: " + serarchKey);
+                                    "Duplicated key was not found: " + searchKey);
                             }
                             final long[] leftmostPtrs = leftmostNode.ptrs;
                             return leftmostPtrs[lmIdx];
