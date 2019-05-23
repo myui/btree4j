@@ -523,6 +523,14 @@ public class BTree extends Paged {
             this.ph = (BTreePageHeader) page.getPageHeader();
         }
 
+        private void clearParent() {
+            if (parentCache != null || ph.parentPage != Paged.NO_PAGE) {
+                ph.parentPage = Paged.NO_PAGE;
+                this.parentCache = null;
+                this.dirty = true;
+            }
+        }
+
         private BTreeNode getParent() {
             if (parentCache != null) {
                 return parentCache;
@@ -681,6 +689,7 @@ public class BTree extends Paged {
                 while (_rootNode.ptrs.length == 1) {
                     _rootNode = _rootNode.getChildNode(0);
                 }
+                _rootNode.clearParent();
             }
             calculateDataLength();
         }
