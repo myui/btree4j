@@ -1,4 +1,4 @@
-package btree4j;
+package utility;
 
 import btree4j.utils.lang.ArrayUtils;
 import org.junit.Assert;
