@@ -81,8 +81,8 @@ public final class FileUtils {
             throw new NullPointerException("Parameter 'fileFilter' is null");
         }
         //Setup effective file filter
-        IOFileFilter effFileFilter = new AndFileFilter(fileFilter, new NotFileFilter(
-            DirectoryFileFilter.INSTANCE));
+        IOFileFilter effFileFilter =
+                new AndFileFilter(fileFilter, new NotFileFilter(DirectoryFileFilter.INSTANCE));
         //Setup effective directory filter
         final IOFileFilter effDirFilter;
         if (dirFilter == null) {
@@ -100,7 +100,8 @@ public final class FileUtils {
      * Finds files within a given directory (and optionally its subdirectories). All files found are
      * filtered by an IOFileFilter.
      */
-    private static void innerListFiles(Collection<File> files, File directory, IOFileFilter filter) {
+    private static void innerListFiles(Collection<File> files, File directory,
+            IOFileFilter filter) {
         File[] found = directory.listFiles((FileFilter) filter);
         if (found != null) {
             for (int i = 0; i < found.length; i++) {
@@ -114,8 +115,8 @@ public final class FileUtils {
     }
 
     public static List<File> listFiles(File directory, boolean recursive) {
-        return listFiles(directory, TrueFileFilter.INSTANCE, (recursive ? TrueFileFilter.INSTANCE
-                : FalseFileFilter.INSTANCE));
+        return listFiles(directory, TrueFileFilter.INSTANCE,
+            (recursive ? TrueFileFilter.INSTANCE : FalseFileFilter.INSTANCE));
     }
 
     public static List<File> listFiles(File directory, String suffix, boolean recursive) {
@@ -133,8 +134,8 @@ public final class FileUtils {
         } else {
             filter = new SuffixFileFilter(suffixes);
         }
-        return listFiles(directory, filter, (recursive ? TrueFileFilter.INSTANCE
-                : FalseFileFilter.INSTANCE));
+        return listFiles(directory, filter,
+            (recursive ? TrueFileFilter.INSTANCE : FalseFileFilter.INSTANCE));
     }
 
     public static List<File> listFiles(File directory, String[] prefixes, String[] suffixes,

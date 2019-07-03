@@ -47,8 +47,8 @@ public class LRUMap<K, V> extends LinkedHashMap<K, V> {
     }
 
     @SuppressWarnings("unchecked")
-    public static <K, V> LRUMap<K, V> readFrom(ObjectInput in) throws IOException,
-            ClassNotFoundException {
+    public static <K, V> LRUMap<K, V> readFrom(ObjectInput in)
+            throws IOException, ClassNotFoundException {
         int cap = in.readInt();
         final LRUMap<K, V> map = new LRUMap<K, V>(cap);
         final int size = in.readInt();

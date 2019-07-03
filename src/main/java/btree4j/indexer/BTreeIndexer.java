@@ -44,13 +44,13 @@ public class BTreeIndexer implements Indexer {
 
     public BTreeIndexer(String name, File file, boolean bulkBuild) {
         this.name = name;
-        final BTree tree = new BTree(file, PAGE_SIZE, bulkBuild ? INDEX_BUILD_PAGES
-                : IN_MEMORY_PAGES, true);
+        final BTree tree =
+                new BTree(file, PAGE_SIZE, bulkBuild ? INDEX_BUILD_PAGES : IN_MEMORY_PAGES, true);
         try {
             tree.init(bulkBuild);
         } catch (BTreeException e) {
-            throw new IllegalStateException("failed on initializing b+-tree: "
-                    + file.getAbsolutePath(), e);
+            throw new IllegalStateException(
+                "failed on initializing b+-tree: " + file.getAbsolutePath(), e);
         }
         this.btree = tree;
     }

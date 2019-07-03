@@ -44,7 +44,8 @@ public final class PrintUtils {
         out.append(getMessage(throwable));
         out.append("\n\n---- Debugging information ----");
         final int tracedepth;
-        if (E_ALL_ON_FATAL && (throwable instanceof RuntimeException || throwable instanceof Error)) {
+        if (E_ALL_ON_FATAL
+                && (throwable instanceof RuntimeException || throwable instanceof Error)) {
             tracedepth = -1;
         } else {
             tracedepth = traceDepth;

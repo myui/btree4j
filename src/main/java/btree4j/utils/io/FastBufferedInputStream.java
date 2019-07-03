@@ -47,8 +47,9 @@ public final class FastBufferedInputStream extends FilterInputStream {
      * asynchronous. We use nullness of buf[] as primary indicator that this stream is closed. (The
      * "in" field is also nulled out on close.)
      */
-    private static final AtomicReferenceFieldUpdater<FastBufferedInputStream, byte[]> bufUpdater = AtomicReferenceFieldUpdater.newUpdater(
-        FastBufferedInputStream.class, byte[].class, "buf");
+    private static final AtomicReferenceFieldUpdater<FastBufferedInputStream, byte[]> bufUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(FastBufferedInputStream.class, byte[].class,
+                "buf");
 
     /**
      * The index one greater than the index of the last valid byte in the buffer. This value is

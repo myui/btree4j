@@ -34,8 +34,8 @@ public final class PurgeOptObservableLongLRUMap<V extends Comparable<V>> extends
     public PurgeOptObservableLongLRUMap(int limit, int purgeUnits, Cleaner<V> cleaner) {
         super(limit);
         if (limit < purgeUnits) {
-            throw new IllegalArgumentException("limit '" + limit + "' < pergeUnits '" + purgeUnits
-                    + '\'');
+            throw new IllegalArgumentException(
+                "limit '" + limit + "' < pergeUnits '" + purgeUnits + '\'');
         }
         if (purgeUnits < 1) {
             throw new IllegalArgumentException("Illegal purgeUnits: " + purgeUnits);
@@ -59,10 +59,11 @@ public final class PurgeOptObservableLongLRUMap<V extends Comparable<V>> extends
         ++_size;
         if (removeEldestEntry()) {
             final int purgeSize = purgeUnits;
-            final List<ComparableChainedEntry<V>> list = new ArrayList<ComparableChainedEntry<V>>(
-                purgeSize);
+            final List<ComparableChainedEntry<V>> list =
+                    new ArrayList<ComparableChainedEntry<V>>(purgeSize);
             for (int i = 0; i < purgeSize; i++) {
-                final ComparableChainedEntry<V> eldest = (ComparableChainedEntry<V>) entryChainHeader.next;
+                final ComparableChainedEntry<V> eldest =
+                        (ComparableChainedEntry<V>) entryChainHeader.next;
                 final V removed = remove(eldest.key);
                 if (removed != null) {
                     list.add(eldest);
@@ -80,8 +81,8 @@ public final class PurgeOptObservableLongLRUMap<V extends Comparable<V>> extends
     }
 
     public void purgeAll() {
-        final List<ComparableChainedEntry<V>> list = new ArrayList<ComparableChainedEntry<V>>(
-            size());
+        final List<ComparableChainedEntry<V>> list =
+                new ArrayList<ComparableChainedEntry<V>>(size());
         for (BucketEntry<V> e : this) {
             list.add((ComparableChainedEntry<V>) e);
         }
@@ -92,8 +93,8 @@ public final class PurgeOptObservableLongLRUMap<V extends Comparable<V>> extends
         }
     }
 
-    private static final class ComparableChainedEntry<V extends Comparable<V>> extends
-            ChainedEntry<V> implements Comparable<ComparableChainedEntry<V>> {
+    private static final class ComparableChainedEntry<V extends Comparable<V>>
+            extends ChainedEntry<V> implements Comparable<ComparableChainedEntry<V>> {
         private static final long serialVersionUID = 8853020653416971039L;
 
         ComparableChainedEntry(long key, V value, BucketEntry<V> next) {

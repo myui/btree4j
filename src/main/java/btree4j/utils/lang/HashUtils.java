@@ -107,7 +107,7 @@ public final class HashUtils {
 
         final int nbits = (((0xfffffc00 >> max) & 4) | // Compute ceil(log2(m+1))
                 ((0x000001f8 >>> max) & 2) | // The constants hold
-        ((0xffff00f2 >>> max) & 1)); // a lookup table
+                ((0xffff00f2 >>> max) & 1)); // a lookup table
         int index;
         while ((index = hash & ((1 << nbits) - 1)) > max) {// May retry on
             hash = (hash >>> nbits) | (hash << (33 - nbits)); // non-power-2 m

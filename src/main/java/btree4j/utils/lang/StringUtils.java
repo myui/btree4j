@@ -161,8 +161,7 @@ public final class StringUtils {
     /**
      * Checks whether the String a valid Java number. this code is ported from jakarta commons lang.
      * 
-     * @link 
-     *       http://jakarta.apache.org/commons/lang/apidocs/org/apache/commons/lang/math/NumberUtils.
+     * @link http://jakarta.apache.org/commons/lang/apidocs/org/apache/commons/lang/math/NumberUtils.
      *       html
      */
     public static boolean isNumber(String str) {
@@ -373,8 +372,8 @@ public final class StringUtils {
     private static int hexToDigit(final char ch, final int index) {
         final int digit = Character.digit(ch, 16);
         if (digit == -1) {
-            throw new IllegalArgumentException("Illegal HexaDecimal character '" + ch
-                    + "' at index " + index);
+            throw new IllegalArgumentException(
+                "Illegal HexaDecimal character '" + ch + "' at index " + index);
         }
         return digit;
     }
