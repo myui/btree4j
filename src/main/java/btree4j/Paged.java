@@ -38,12 +38,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.lang.ref.Reference;
-import java.lang.ref.WeakReference;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -51,8 +50,6 @@ import javax.annotation.concurrent.NotThreadSafe;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import com.google.common.collect.MapMaker;
 
 @NotThreadSafe
 public abstract class Paged {
@@ -68,10 +65,7 @@ public abstract class Paged {
     //--------------------------------------------
 
     @Nonnull
-    private final Map<Long, Reference<Page>> _pages;
-    {
-        _pages = new MapMaker().initialCapacity(64).weakKeys().weakValues().makeMap();
-    }
+    private final Map<Long, Page> _pages = new WeakHashMap<>(64);
 
     @Nonnull
     private final FileHeader _fileHeader;
@@ -225,12 +219,8 @@ public abstract class Paged {
      */
     @Nonnull
     protected final Page getPage(long pageNum) throws BTreeException {
-        Page p = null;
         // if not check if it's already loaded in the page cache
-        Reference<Page> ref = _pages.get(pageNum); // Check if required page is in the volatile cache
-        if (ref != null) {
-            p = ref.get();
-        }
+        Page p = _pages.get(pageNum); // Check if required page is in the volatile cache
         if (p == null) {
             // if still not found we need to create it and add it to the page cache.
             p = new Page(pageNum);
@@ -239,7 +229,7 @@ public abstract class Paged {
             } catch (IOException e) {
                 throw new BTreeException(e);
             }
-            _pages.put(pageNum, new WeakReference<Page>(p));
+            _pages.put(pageNum, p);
         }
         return p;
     }
