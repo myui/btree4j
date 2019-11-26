@@ -1,5 +1,5 @@
 <!--
-  Copyright (c) 2006-2018 Makoto Yui
+  Copyright (c) 2006 and onwards Makoto Yui
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -13,8 +13,9 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>io.github.myui</groupId>
@@ -25,10 +26,10 @@
 
 	<name>btree4j</name>
 	<description>A efficient B+-tree implementation written in pure Java</description>
-	<url>https://github.com/myui/btree4j/</url>
+	<url>https://github.com/myui/btree4j</url>
 	<organization>
 		<name>Makoto Yui</name>
-		<url>http://myui.github.io/</url>
+		<url>https://github.com/myui/btree4j/</url>
 	</organization>
 
 	<licenses>
@@ -50,10 +51,19 @@
 	</ciManagement>
 
 	<scm>
-		<url>https://github.com/myui/bree4j</url>
-		<connection>scm:git:git@github.com:myui/bree4j.git</connection>
-		<developerConnection>scm:git:git@github.com:myui/bree4j.git</developerConnection>
+		<url>https://github.com/myui/btree4j</url>
+		<connection>scm:git:git@github.com:myui/btree4j.git</connection>
+		<developerConnection>scm:git:git@github.com:myui/btree4j.git</developerConnection>
 	</scm>
+
+	<developers>
+		<developer>
+			<id>myui</id>
+			<name>Makoto YUI</name>
+			<email>myui@apache.org</email>
+			<url>http://myui.github.io/</url>
+		</developer>
+	</developers>
 
 	<properties>
 		<main.basedir>${project.basedir}</main.basedir>
@@ -67,6 +77,8 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<junit.version>4.12</junit.version>
+		<dependency.locations.enabled>false</dependency.locations.enabled>
+		<maven-enforcer.requireMavenVersion>[3.3.1,)</maven-enforcer.requireMavenVersion>
 	</properties>
 
 	<dependencies>
@@ -115,7 +127,6 @@
 			<version>1.20</version>
 			<scope>test</scope>
 		</dependency>
-
 	</dependencies>
 
 	<distributionManagement>
@@ -198,12 +209,42 @@
 	<build>
 		<directory>target</directory>
 		<outputDirectory>target/classes</outputDirectory>
+		<finalName>${project.artifactId}-${project.version}</finalName>
 		<testOutputDirectory>target/test-classes</testOutputDirectory>
 
 		<pluginManagement>
 			<plugins>
 				<plugin>
-					<!-- mvn spotless:apply -->
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.1</version>
+					<configuration>
+						<source>${maven.compiler.source}</source>
+						<target>${maven.compiler.target}</target>
+						<debug>true</debug>
+						<debuglevel>lines,vars,source</debuglevel>
+						<encoding>UTF-8</encoding>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.0.2</version>
+					<configuration>
+						<finalName>${project.artifactId}-${project.version}</finalName>
+						<outputDirectory>${main.basedir}/target</outputDirectory>
+						<excludes>
+							<exclude>**/.gitkeep</exclude>
+						</excludes>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-enforcer-plugin</artifactId>
+					<version>3.0.0-M1</version>
+				</plugin>
+				<!-- mvn spotless:apply -->
+				<plugin>
 					<groupId>com.diffplug.spotless</groupId>
 					<artifactId>spotless-maven-plugin</artifactId>
 					<version>1.23.1</version>
@@ -225,7 +266,7 @@
 					<artifactId>license-maven-plugin</artifactId>
 					<version>3.0</version>
 					<configuration>
-						<header>resources/license-header.txt</header>
+						<header>${main.basedir}/resources/license-header.txt</header>
 						<properties>
 							<currentYear>${build.year}</currentYear>
 							<copyrightOwner>${project.organization.name}</copyrightOwner>
@@ -233,12 +274,16 @@
 						<includes>
 							<include>src/main/**/*.java</include>
 							<include>src/test/**/*.java</include>
+							<include>bin/*.sh</include>
 							<include>**/pom.xml</include>
 						</includes>
-						<useDefaultExcludes>true</useDefaultExcludes>
+						<useDefaultExcludes>false</useDefaultExcludes>
+						<excludes>
+							<exclude>target/</exclude>
+						</excludes>
 						<encoding>UTF-8</encoding>
 						<headerDefinitions>
-							<headerDefinition>resources/header-definition.xml</headerDefinition>
+							<headerDefinition>${main.basedir}/resources/header-definition.xml</headerDefinition>
 						</headerDefinitions>
 						<mapping>
 							<md>XML_STYLE</md>
@@ -252,38 +297,160 @@
 						</execution>
 					</executions>
 				</plugin>
+				<!-- javadoc.jar -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<configuration>
+						<locale>en_US</locale>
+						<docencoding>UTF-8</docencoding>
+						<show>protected</show>
+						<linksource>true</linksource>
+					</configuration>
+					<executions>
+						<execution>
+							<id>attach-javadocs</id>
+							<goals>
+								<goal>jar</goal>
+							</goals>
+							<configuration>
+								<!-- workaround for Java 8 -->
+								<!-- see http://stackoverflow.com/questions/15886209/maven-is-not-working-in-java-8-when-javadoc-tags-are-incomplete -->
+								<additionalparam>${javadoc.opts}</additionalparam>
+								<!-- see https://stackoverflow.com/a/16743137 -->
+								<doclint>none</doclint>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+				<!-- Copy LICENSE/NOTICE/DISCLAIMER to jar -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-remote-resources-plugin</artifactId>
+					<configuration>
+						<skip>true</skip>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-resources-plugin</artifactId>
+					<executions>
+						<execution>
+							<id>copy-resources</id>
+							<phase>validate</phase>
+							<goals>
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${project.basedir}/target/classes/META-INF</outputDirectory>
+								<resources>
+									<resource>
+										<directory>${main.basedir}/</directory>
+										<includes>
+											<include>LICENSE</include>
+											<include>NOTICE</include>
+											<include>DISCLAIMER</include>
+										</includes>
+									</resource>
+								</resources>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
 			</plugins>
 		</pluginManagement>
 
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.1</version>
-				<configuration>
-					<source>${java.source.version}</source>
-					<target>${java.target.version}</target>
-					<debug>true</debug>
-					<debuglevel>lines,vars,source</debuglevel>
-					<encoding>UTF-8</encoding>
-				</configuration>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>enforce-JAVA_HOME-is-set</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireEnvironmentVariable>
+									<variableName>JAVA_HOME</variableName>
+								</requireEnvironmentVariable>
+							</rules>
+							<fail>true</fail>
+						</configuration>
+					</execution>
+					<execution>
+						<id>enforce-java-8</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireJavaVersion>
+									<version>[1.8,)</version>
+									<message>
+										This project requires JDK version 1.8 or higher.
+									</message>
+								</requireJavaVersion>
+							</rules>
+						</configuration>
+					</execution>
+					<execution>
+						<id>required-maven-version</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireMavenVersion>
+									<version>${maven-enforcer.requireMavenVersion}</version>
+								</requireMavenVersion>
+							</rules>
+						</configuration>
+					</execution>
+					<!-- Check Java class file compatibility to Java 7/8 -->
+					<execution>
+						<id>enforce-bytecode-version</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<enforceBytecodeVersion>
+									<maxJdkVersion>${maven.compiler.target}</maxJdkVersion>
+									<excludes>
+										<exclude>jdk.tools:jdk.tools</exclude>
+										<exclude>org.mindrot:jbcrypt</exclude>
+									</excludes>
+								</enforceBytecodeVersion>
+							</rules>
+							<fail>true</fail>
+						</configuration>
+					</execution>
+				</executions>
+				<dependencies>
+					<dependency>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>extra-enforcer-rules</artifactId>
+						<version>1.0-beta-9</version>
+					</dependency>
+				</dependencies>
 			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>2.5</version>
-				<configuration>
-					<finalName>${project.artifactId}-${project.version}</finalName>
-				</configuration>
-			</plugin>
-
 			<!-- mvn spotless:apply -->
 			<plugin>
 				<groupId>com.diffplug.spotless</groupId>
 				<artifactId>spotless-maven-plugin</artifactId>
 			</plugin>
-
+			<!-- mvn license:check; mvn license:format -->
+			<plugin>
+				<groupId>com.mycila</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+			</plugin>
+			<!-- mvn compile -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+			</plugin>
 			<!-- start sonatype deploy -->
 			<!-- mvn clean deploy -DperformRelease=true -Dskiptests=true -Dmaven.test.skip=true -->
 			<plugin>

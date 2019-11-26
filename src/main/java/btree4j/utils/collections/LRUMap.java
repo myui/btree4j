@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018 Makoto Yui
+ * Copyright (c) 2006 and onwards Makoto Yui
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

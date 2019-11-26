@@ -1,6 +1,8 @@
 btree4j: Disk-based Prefix B+-tree written in Pure Java
 ======================================================= 
+[![Build Status](https://travis-ci.org/myui/btree4j.svg?branch=master)](https://travis-ci.org/myui/btree4j)
 [![License](http://img.shields.io/:license-Apache_v2-blue.svg)](https://github.com/myui/btree4j/blob/master/LICENSE)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.github.myui/btree4j/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.github.myui/btree4j)
 
 This software is originally developed for [XBird](https://github.com/myui/xbird/) based on [Apache Xindice](https://xml.apache.org/xindice/dev/guide-internals.html#3.+Data+storage). 
 

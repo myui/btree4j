@@ -22,4 +22,4 @@ else
 fi
 
 cd $PROJ_HOME
-mvn clean spotless:apply
+mvn clean deploy -DperformRelease=true -Dskiptests=true -Dmaven.test.skip=true
