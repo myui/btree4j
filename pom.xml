@@ -436,6 +436,31 @@
 					</dependency>
 				</dependencies>
 			</plugin>
+			<!-- check Java API compatibility to Java 8 -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>animal-sniffer-maven-plugin</artifactId>
+				<version>1.14</version>
+				<configuration>
+					<signature>
+						<groupId>org.codehaus.mojo.signature</groupId>
+						<artifactId>java18</artifactId>
+						<version>1.0</version>
+					</signature>
+					<ignores>
+						<ignore>sun.misc.Unsafe</ignore>
+					</ignores>
+				</configuration>
+				<executions>
+					<execution>
+						<id>ensure-java-1.8-class-library</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<!-- mvn spotless:apply -->
 			<plugin>
 				<groupId>com.diffplug.spotless</groupId>
