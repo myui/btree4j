@@ -9,6 +9,8 @@ btree4j: Disk-based Prefix B+-tree written in Pure Java
 
 Btree4j is a disk-based [Prefix B+-tree](https://dl.acm.org/citation.cfm?id=320530) written in Pure Java.
 
+It's pretty fast and [100k ops/sec](https://github.com/myui/btree4j/blob/master/src/test/java/btree4j/benchmark/JMHBenchmark.java) is expected even on laptop.
+
 # Using btree4j
 
 ```
