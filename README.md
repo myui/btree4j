@@ -33,8 +33,8 @@ Applied many improvements over the original Xindice's implementation as follows:
 
 * Support both unique and non-unique indexing. Storing duplicate keys is allowed for non-unique indexing.
 
-* [Index file](https://en.wikipedia.org/wiki/Indexed_file) based on B+-tree is [supported](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BIndexFile.java). [Multiple values per a key](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BIndexMultiValueFile.java) is also supported.
- [BIndexFile](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BIndexFile.java) stores `<bytes[] KEY, byte[] VALUE>` with VALUE stored on distinct data pages and pointers to them are managed by [B+-Tree](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BTree.java) to avoid consuming many disk pages for large values in B+-tree.
+* [Index file](https://en.wikipedia.org/wiki/Indexed_file) based on B+-tree is [supported](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BTreeIndex.java). [Multiple values per a key](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BTreeIndexDup.java) is also supported.
+ [BTreeIndex](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BTreeIndex.java) stores `<bytes[] KEY, byte[] VALUE>` with VALUE stored on distinct data pages and pointers to them are managed by [B+-Tree](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/BTree.java) to avoid consuming many disk pages for large values in B+-tree.
 
 * Support variable-length [key](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/Key.java)/[value](https://github.com/myui/btree4j/blob/master/src/main/java/btree4j/Value.java)
 
@@ -47,7 +47,6 @@ Applied many improvements over the original Xindice's implementation as follows:
 * Support efficient Bulk-loading.
 
 * Minimum dependencies to external libraries. Runs on Java 8 or later.
-
 
 # Sponsors
 
