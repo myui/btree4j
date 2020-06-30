@@ -191,8 +191,8 @@ public final class ArrayUtils {
      * @param index the position of the new object
      * @param element the object to add
      * @return A new array containing the existing elements and the new element
-     * @throws IndexOutOfBoundsException if the index is out of range (index < 0 || index >
-     *         array.length).
+     * @throws IndexOutOfBoundsException if the index is out of range
+     *         <code>index &lt; 0 || index &gt; array.length</code>
      */
     @SuppressWarnings("unchecked")
     public static <T> T[] insert(final Object array, final int index, final Object element) {
@@ -291,8 +291,9 @@ public final class ArrayUtils {
      * @param index the position of the element to be removed
      * @return A new array containing the existing elements except the element at the specified
      *         position.
-     * @throws IndexOutOfBoundsException if the index is out of range (index < 0 || index >=
-     *         array.length), or if the array is <code>null</code>.
+     * @throws IndexOutOfBoundsException if the index is out of range
+     *         <code>index &lt; 0 || index &gt;= array.length</code>, or if the array is
+     *         <code>null</code>.
      * @since 2.1
      */
     @SuppressWarnings("unchecked")

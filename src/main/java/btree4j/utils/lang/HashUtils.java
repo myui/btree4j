@@ -99,7 +99,7 @@ public final class HashUtils {
      * of less than 2 tries for all table sizes, and has a maximum 2% difference from perfectly
      * uniform slot probabilities when applied to all possible hash codes for sizes less than 32.
      *
-     * @return a per-thread-random index, 0 <= index <= max
+     * @return a per-thread-random index, <code>0 &lt;= index &lt;= max</code>
      */
     public static final int hash(final Thread thrd, final int max) {
         final long id = thrd.getId();

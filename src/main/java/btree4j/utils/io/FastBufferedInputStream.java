@@ -141,7 +141,7 @@ public final class FastBufferedInputStream extends FilterInputStream {
      *
      * @param in the underlying input stream.
      * @param size the buffer size.
-     * @exception IllegalArgumentException if size <= 0.
+     * @exception IllegalArgumentException if size is less than or equals to 0.
      */
     public FastBufferedInputStream(InputStream in, int size) {
         super(in);

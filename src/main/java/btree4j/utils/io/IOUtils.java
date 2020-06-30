@@ -142,9 +142,6 @@ public final class IOUtils {
         }
     }
 
-    /**
-     * InputStream -> OutputStream
-     */
     public static int copy(InputStream input, OutputStream output) throws IOException {
         final byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
         int count = 0;
@@ -156,9 +153,6 @@ public final class IOUtils {
         return count;
     }
 
-    /**
-     * Reader -> Writer.
-     */
     public static int copy(Reader input, Writer output) throws IOException {
         final char[] buffer = new char[DEFAULT_BUFFER_SIZE];
         int count = 0;
@@ -170,9 +164,6 @@ public final class IOUtils {
         return count;
     }
 
-    /**
-     * String -> OutputStream.
-     */
     public static void copy(String input, OutputStream output) throws IOException {
         final StringReader in = new StringReader(input);
         final OutputStreamWriter out = new OutputStreamWriter(output);
