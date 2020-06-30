@@ -176,6 +176,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>3.2.0</version>
 						<configuration>
 							<locale>en_US</locale>
 							<docencoding>UTF-8</docencoding>
@@ -312,6 +313,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>3.2.0</version>
 					<configuration>
 						<locale>en_US</locale>
 						<docencoding>UTF-8</docencoding>
