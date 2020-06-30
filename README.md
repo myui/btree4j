@@ -1,10 +1,25 @@
 btree4j: Disk-based Prefix B+-tree written in Pure Java
 ======================================================= 
+[![Donate](https://img.shields.io/badge/github-donate-yellow.svg)](https://github.com/sponsors/myui)
 [![Build Status](https://travis-ci.org/myui/btree4j.svg?branch=master)](https://travis-ci.org/myui/btree4j)
 [![License](http://img.shields.io/:license-Apache_v2-blue.svg)](https://github.com/myui/btree4j/blob/master/LICENSE)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.github.myui/btree4j/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.github.myui/btree4j)
 
-This software is originally developed for [XBird](https://github.com/myui/xbird/) based on [Apache Xindice](https://xml.apache.org/xindice/dev/guide-internals.html#3.+Data+storage). 
+# What's Btree4j
+
+Btree4j is a disk-based [Prefix B+-tree](https://dl.acm.org/citation.cfm?id=320530) written in Pure Java.
+
+# Using btree4j
+
+```
+<dependency>
+    <groupId>io.github.myui</groupId>
+    <artifactId>btree4j</artifactId>
+    <version>0.9.0</version>
+</dependency>
+```
+
+[Find usage](https://github.com/myui/btree4j/tree/master/src/test/java/btree4j) in unit tests.
 
 # Features and Strength
 
@@ -31,5 +46,20 @@ Applied many improvements over the original Xindice's implementation as follows:
 
 * Support efficient Bulk-loading.
 
-* Minimum dependencies to external libraries. Runs on Java 7.
+* Minimum dependencies to external libraries. Runs on Java 8 or later.
 
+
+# Sponsors
+
+No sponsors yet. Will you be the first?
+
+<span class="badge-githubsponsors"><a href="https://github.com/sponsors/myui" title="Donate to this project using GitHub Sponsors"><img src="https://img.shields.io/badge/github-donate-yellow.svg" alt="GitHub Sponsors donate button" /></a></span>
+
+It will be my motivation to continue working on this project.
+
+# Credits
+
+Copyright 2006 and onwards Makoto Yui<br/>
+Copyright 1999-2007 The Apache Software Foundation
+
+This software is originally developed for [XBird](https://github.com/myui/xbird/) based on [Apache Xindice](https://xml.apache.org/xindice/dev/guide-internals.html#3.+Data+storage).
