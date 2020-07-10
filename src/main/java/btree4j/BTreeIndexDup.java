@@ -26,7 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * Duplicate allowed version of {@link BTreeIndex}.
+ * An optimized version of duplicate-allowed {@link BTreeIndex}.
  */
 public final class BTreeIndexDup extends BTreeIndex {
     private static final Log LOG = LogFactory.getLog(BTreeIndexDup.class);

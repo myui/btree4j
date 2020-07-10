@@ -41,7 +41,7 @@ public class BTreeIndexTest {
     private static final boolean DEBUG = true;
 
     @Test
-    public void testSearch() throws BTreeException {
+    public void testAddPutGet() throws BTreeException {
         File tmpDir = FileUtils.getTempDir();
         Assert.assertTrue(tmpDir.exists());
         File tmpFile = new File(tmpDir, "BIndexFileTest1.idx");
@@ -76,7 +76,7 @@ public class BTreeIndexTest {
     }
 
     @Test
-    public void testSearch2() throws BTreeException {
+    public void testAddPutGetAfterReopen() throws BTreeException {
         File tmpDir = FileUtils.getTempDir();
         Assert.assertTrue(tmpDir.exists());
         File tmpFile = new File(tmpDir, "BIndexFileTest1.idx");
@@ -116,7 +116,7 @@ public class BTreeIndexTest {
     }
 
     @Test
-    public void testBtreeIndexDup() throws IOException, BTreeException {
+    public void testBTreeIndexDup() throws IOException, BTreeException {
         File tmpDir = FileUtils.getTempDir();
         Assert.assertTrue(tmpDir.exists());
         File tmpFile = new File(tmpDir, "test1.bmidx");
@@ -219,7 +219,7 @@ public class BTreeIndexTest {
     }
 
     @Test
-    public void test10m() throws BTreeException {
+    public void test10mKeys() throws BTreeException {
         File tmpDir = FileUtils.getTempDir();
         Assert.assertTrue(tmpDir.exists());
         File indexFile = new File(tmpDir, "test10m.idx");
