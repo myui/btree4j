@@ -21,21 +21,13 @@ import btree4j.utils.io.FileUtils;
 import btree4j.utils.lang.ArrayUtils;
 import btree4j.utils.lang.Primitives;
 import btree4j.utils.lang.PrintUtils;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Random;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
-import org.junit.Assert;
-import org.junit.Test;
 
 public class BTreeIndexTest {
     private static final boolean DEBUG = true;

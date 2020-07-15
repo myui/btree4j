@@ -15,9 +15,11 @@
  */
 package btree4j;
 
-import btree4j.indexer.BasicIndexQuery.IndexConditionBW;
 import btree4j.utils.io.FileUtils;
 import btree4j.utils.lang.PrintUtils;
+import org.junit.Assert;
+import org.junit.Test;
+import utility.Range;
 
 import java.io.File;
 import java.util.HashMap;
@@ -25,14 +27,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static btree4j.BTree.KEY_NOT_FOUND;
+import static utility.Utils.MAXN;
+import static utility.Utils.getRangeOfTen;
 
 public class BTreeTest {
     private static final boolean DEBUG = true;
 
     @Test
-    public void test() throws BTreeException {
+    public void shouldAddThenPeekMin() throws BTreeException {
         File tmpDir = FileUtils.getTempDir();
         Assert.assertTrue(tmpDir.exists());
         File tmpFile = new File(tmpDir, "BTreeTest1.idx");
@@ -44,37 +47,271 @@ public class BTreeTest {
         BTree btree = new BTree(tmpFile);
         btree.init(/* bulkload */ false);
 
-        for (int i = 0; i < 1000; i++) {
+        Range range = getRangeOfTen(MAXN);
+        BTreeKey keyValue;
+        for (int i = range.getMax(); i >= range.getMin(); i--) {
             Value k = new Value("k" + i);
-            long v = i;
-            btree.addValue(k, v);
+            btree.addValue(k, i);
+            keyValue = btree.peekMinimum();
+            Assert.assertEquals(keyValue.getPointer().longValue(), i);
+            Assert.assertTrue(keyValue.getKey().equals(k));
+        }
+    }
+    @Test
+    public void shouldAddThenPeekAndPopMin() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BTreeTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
         }
 
-        for (int i = 0; i < 1000; i++) {
+        BTree btree = new BTree(tmpFile);
+        btree.init(/* bulkload */ false);
+
+        Range range = getRangeOfTen(MAXN);
+        BTreeKey peekKey, popKey;
+        for (int i = range.getMin(); i <= range.getMax(); i++) {
             Value k = new Value("k" + i);
-            long expected = i;
-            long actual = btree.findValue(k);
-            Assert.assertEquals(expected, actual);
+            btree.addValue(k, i);
         }
 
-        btree.search(new IndexConditionBW(new Value("k" + 900), new Value("k" + 910)),
-            new BTreeCallback() {
+        for (int i = range.getMin(); i <= range.getMax(); i++) {
+            Value k = new Value("k" + i);
+            peekKey = btree.peekMinimum();
+            Assert.assertEquals(peekKey.getPointer().longValue(), i);
+            Assert.assertTrue(peekKey.getKey().equals(k));
+            popKey = btree.popMinimum();
+            Assert.assertEquals(peekKey.getKey(), popKey.getKey());
+            Assert.assertEquals(peekKey.getPointer(), popKey.getPointer());
+        }
+    }
+    @Test
+    public void shouldAddInReverseThenPeekAndPopMin() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BTreeTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
+        }
 
-                @Override
-                public boolean indexInfo(Value value, long pointer) {
-                    //System.out.println(pointer);
-                    return true;
-                }
+        BTree btree = new BTree(tmpFile);
+        btree.init(/* bulkload */ false);
 
-                @Override
-                public boolean indexInfo(Value key, byte[] value) {
-                    throw new UnsupportedOperationException();
-                }
-            });
+        Range range = getRangeOfTen(MAXN);
+        BTreeKey peekKey, popKey;
+        for (int i = range.getMax(); i >= range.getMin(); i--) {
+            Value k = new Value("k" + i);
+            btree.addValue(k, i);
+        }
+        for (int i = range.getMin(); i <= range.getMax(); i++) {
+            Value k = new Value("k" + i);
+            peekKey = btree.peekMinimum();
+            Assert.assertEquals(peekKey.getPointer().longValue(), i);
+            Assert.assertTrue(peekKey.getKey().equals(k));
+            popKey = btree.popMinimum();
+            Assert.assertEquals(peekKey.getKey(), popKey.getKey());
+            Assert.assertEquals(peekKey.getPointer(), popKey.getPointer());
+        }
     }
 
     @Test
-    public void test10m() throws BTreeException {
+    public void shouldAdd() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BTreeTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
+        }
+
+        BTree btree = new BTree(tmpFile);
+        btree.init(/* bulkload */ false);
+
+        for (int i = 0; i < MAXN; i++) {
+            Value k = new Value("k" + i);
+            btree.addValue(k, i);
+        }
+
+        for (int i = 0; i < MAXN; i++) {
+            Value k = new Value("k" + i);
+            long actual = btree.findValue(k);
+            Assert.assertEquals(i, actual);
+        }
+    }
+    @Test
+    public void shouldAddRemovePeekAndPopMin() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BTreeTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
+        }
+
+        BTree btree = new BTree(tmpFile);
+        btree.init(/* bulkload */ false);
+
+        Range range = new Range(1, 3);
+        BTreeKey peekKey, popKey;
+        for (int i = range.getMin(); i <= range.getMax(); i++) {
+            Value k = new Value("k" + i);
+            btree.addValue(k, i);
+        }
+
+        btree.removeValue(new Value("k" + 1));
+        peekKey = btree.peekMinimum();
+        Assert.assertEquals(peekKey.getPointer().longValue(), 2);
+        Assert.assertTrue(peekKey.getKey().equals(new Value("k" + 2)));
+        popKey = btree.popMinimum();
+        Assert.assertEquals(peekKey.getKey(), popKey.getKey());
+        Assert.assertEquals(peekKey.getPointer(), popKey.getPointer());
+    }
+
+    @Test
+    public void shouldAddThenRemove() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BTreeTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
+        }
+
+        BTree btree = new BTree(tmpFile);
+        btree.init(/* bulkload */ false);
+
+        for (int i = 0; i < MAXN; i++) {
+            Value k = new Value("k" + i);
+            btree.addValue(k, i);
+        }
+
+        for (int i = 0; i < MAXN; i++) {
+            Value k = new Value("k" + i);
+            btree.removeValue(k);
+        }
+
+        for (int i = 0; i < MAXN; i++) {
+            Value k = new Value("k" + i);
+            long actual = btree.findValue(k);
+            Assert.assertEquals(KEY_NOT_FOUND, actual);
+        }
+    }
+
+    @Test
+    public void shouldAddThenRemoveFrom() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BTreeTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
+        }
+
+        BTree btree = new BTree(tmpFile);
+        btree.init(/* bulkload */ false);
+        btree.findValue(new Value("k"));
+
+        for (int i = 0; i < MAXN; i++) {
+            Value k = new Value("k" + i);
+            btree.addValue(k, i);
+        }
+
+        btree.removeValueFrom(new Value("k" + 0));
+
+        for (int i = 0; i < MAXN; i++) {
+            Value k = new Value("k" + i);
+            long actual = btree.findValue(k);
+            Assert.assertEquals(KEY_NOT_FOUND, actual);
+        }
+    }
+
+    private int getFirstDigit(int a) {
+        return Integer.parseInt(Integer.toString(a).substring(0, 1));
+    }
+    @Test
+    public void shouldAddThenRemoveFromHalf() throws BTreeException {
+        shouldAddThenRemoveFrom(MAXN / 2);
+    }
+    @Test
+    public void shouldAddThenRemoveFromOneTenth() throws BTreeException {
+        shouldAddThenRemoveFrom(MAXN / 10);
+    }
+    @Test
+    public void shouldAddThenRemoveFromAndClearChild() throws BTreeException {
+        shouldAddThenRemoveFrom(249905 < MAXN ? 249905 : 1);
+    }
+    @Test
+    public void shouldAddThenRemoveFromAndChangeRoot() throws BTreeException {
+        shouldAddThenRemoveFrom(433 < MAXN ? 433 : 1);
+    }
+
+    private void shouldAddThenRemoveFrom(int threshold) throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BTreeTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
+        }
+
+        BTree btree = new BTree(tmpFile);
+        btree.init(/* bulkload */ false);
+
+        for (int i = 0; i < MAXN; i++) {
+            Value k = new Value("k" + i);
+            btree.addValue(k, i);
+        }
+
+        btree.removeValueFrom(new Value("k" + threshold));
+
+        for (int i = 0; i < MAXN; i++) {
+            Value k = new Value("k" + i);
+            long actual = btree.findValue(k);
+            if (String.valueOf(i).compareTo(String.valueOf(threshold)) < 0)
+                Assert.assertEquals(i, actual);
+            else
+                Assert.assertEquals(KEY_NOT_FOUND, actual);
+        }
+    }
+
+    @Test
+    public void shouldAddThenRemoveHalf500k() throws BTreeException {
+        File tmpDir = FileUtils.getTempDir();
+        Assert.assertTrue(tmpDir.exists());
+        File tmpFile = new File(tmpDir, "BTreeTest1.idx");
+        tmpFile.deleteOnExit();
+        if (tmpFile.exists()) {
+            Assert.assertTrue(tmpFile.delete());
+        }
+
+        BTree btree = new BTree(tmpFile);
+        btree.init(/* bulkload */ false);
+
+        for (int i = 0; i < MAXN; i++) {
+            Value k = new Value("k" + i);
+            btree.addValue(k, i);
+        }
+
+        for (int i = 0; i < MAXN/2; i++) {
+            Value k = new Value("k" + i);
+            btree.removeValue(k);
+        }
+
+        for (int i = 0; i < MAXN; i++) {
+            Value k = new Value("k" + i);
+            long actual = btree.findValue(k);
+            if (i < MAXN / 2)
+                Assert.assertEquals(KEY_NOT_FOUND, actual);
+            else
+                Assert.assertEquals(i, actual);
+        }
+    }
+
+    @Test
+    public void shouldAddRemoveRandom1m() throws BTreeException {
         File tmpDir = FileUtils.getTempDir();
         Assert.assertTrue(tmpDir.exists());
         File indexFile = new File(tmpDir, "test10m.idx");
@@ -88,7 +325,7 @@ public class BTreeTest {
 
         final Map<Value, Long> kv = new HashMap<>();
         final Random rand = new Random();
-        for (int i = 0; i < 10000000; i++) {
+        for (int i = 0; i < 2 * MAXN; i++) {
             long nt = System.nanoTime(), val = rand.nextInt(Integer.MAX_VALUE); // FIXME val = rand.nextLong();
             Value key = new Value(String.valueOf(nt) + val);
             btree.addValue(key, val);
@@ -115,9 +352,9 @@ public class BTreeTest {
             Value k = e.getKey();
             Long v = e.getValue();
             long result = btree.findValue(k);
-            Assert.assertNotEquals("key is not registered: " + k, BTree.KEY_NOT_FOUND, result);
+            Assert.assertNotEquals("key is not registered: " + k, KEY_NOT_FOUND, result);
             Assert.assertEquals("Exexpected value '" + result + "' found for key: " + k,
-                v.longValue(), result);
+                    v.longValue(), result);
         }
     }
 

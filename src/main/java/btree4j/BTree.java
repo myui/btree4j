@@ -39,22 +39,17 @@ import btree4j.utils.collections.longs.PurgeOptObservableLongLRUMap;
 import btree4j.utils.io.FastMultiByteArrayOutputStream;
 import btree4j.utils.lang.ArrayUtils;
 import btree4j.utils.lang.Primitives;
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
+import com.google.common.annotations.Beta;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * BTree represents a Variable Magnitude Simple-Prefix B+Tree File.
@@ -96,6 +91,7 @@ public class BTree extends Paged {
 
     private BTreeRootInfo _rootInfo;
     private BTreeNode _rootNode;
+    private BTreeNode _firstNode;
 
     public BTree(@Nonnull File file) {
         this(file, true);
@@ -106,7 +102,7 @@ public class BTree extends Paged {
     }
 
     public BTree(@Nonnull File file, @Nonnegative int pageSize, int caches,
-            boolean duplicateAllowed) {
+                 boolean duplicateAllowed) {
         super(file, pageSize);
         BTreeFileHeader fh = getFileHeader();
         fh.incrTotalPageCount(); // for root page
@@ -169,6 +165,7 @@ public class BTree extends Paged {
             long p = _fileHeader.getRootPage();
             this._rootInfo = new BTreeRootInfo(p);
             this._rootNode = getBTreeNode(_rootInfo, p, null);
+            this._firstNode = this._rootNode;
             return true;
         } else {
             return false;
@@ -197,6 +194,7 @@ public class BTree extends Paged {
             if (close) {
                 close();
             }
+            this._firstNode = this._rootNode;
             return true;
         }
         return false;
@@ -204,6 +202,24 @@ public class BTree extends Paged {
 
     protected final boolean isDuplicateAllowed() {
         return _fileHeader._duplicateAllowed;
+    }
+
+    /**
+     * peeks first value in Btree.
+     * @return minimum value
+     */
+    public BTreeKey peekMinimum() throws BTreeException {
+        _firstNode = _firstNode.getFirstNode();
+        return _firstNode.peekMinimum();
+    }
+
+    /**
+     * pops first value in Btree.
+     * @return minimum value
+     */
+    public synchronized BTreeKey popMinimum() throws BTreeException {
+        _firstNode = _firstNode.getFirstNode();
+        return _firstNode.popMinimum();
     }
 
     /**
@@ -247,6 +263,10 @@ public class BTree extends Paged {
         } catch (IOException e) {
             throw new BTreeException(e);
         }
+    }
+
+    public synchronized void removeValueFrom(Value value) throws BTreeException {
+        _rootNode.removeFrom(value);
     }
 
     /**
@@ -532,6 +552,14 @@ public class BTree extends Paged {
             this.ph = (BTreePageHeader) page.getPageHeader();
         }
 
+        private void clearParent() {
+            if (parentCache != null || ph.parentPage != Paged.NO_PAGE) {
+                ph.parentPage = Paged.NO_PAGE;
+                this.parentCache = null;
+                this.dirty = true;
+            }
+        }
+
         private BTreeNode getParent() {
             if (parentCache != null) {
                 return parentCache;
@@ -555,6 +583,84 @@ public class BTree extends Paged {
                 this.parentCache = node;
                 this.dirty = true;
             }
+        }
+
+        private boolean isEmpty() {
+            return this.ptrs.length == 0;
+        }
+
+        private void removeSelf() throws BTreeException {
+            if (ph.getStatus() == BRANCH) {
+                throw new RuntimeException("removeSelf is not implemented for Branch nodes.");
+            }
+
+            if (this._prev != -1) {
+                BTreeNode prev = getBTreeNode(root, this._prev);
+                prev._next = this._next;
+            }
+            if (this._next != -1) {
+                BTreeNode next = getBTreeNode(root, this._next);
+                next._prev = this._prev;
+            }
+
+            BTreeNode parent = this.getParent();
+            if (parent != null) {
+                parent.removeChild(this.page.getPageNum());
+                clearParent();
+            }
+        }
+        private void removeChild(long pointer) throws BTreeException {
+            if (this.ph.getStatus() == LEAF) return;
+            for (int i = 0; i < ptrs.length; i++) {
+                if (ptrs[i] == pointer && keys.length != 0) {
+                    decrDataLength(keys[i]);
+                    set(ArrayUtils.remove(keys, i), ArrayUtils.remove(ptrs, i));
+                    break;
+                }
+            }
+            if (this.ptrs.length == 1) {
+                BTreeNode parent = this.getParent();
+                if (parent != null) {
+                    parent.updateChild(this.page.getPageNum(), this.ptrs[0]);
+                } else {
+                    _rootNode = getBTreeNode(_rootInfo, ptrs[0]);
+                }
+            }
+        }
+        private void updateChild(long currentPointer, long newPointer) throws BTreeException {
+            for (int i = 0; i < ptrs.length; i++) {
+                if (ptrs[i] == currentPointer) {
+                    BTreeNode child = getBTreeNode(_rootInfo, newPointer, this);
+//                    child.setParent(this); // Previous line makes it redundant?
+                    ptrs[i] = newPointer;
+                    break;
+                }
+            }
+        }
+
+        private BTreeNode getFirstNode() throws BTreeException {
+            if (ph.getStatus() == BRANCH) {
+                return getChildNode(0).getFirstNode();
+            } else if (this._prev != -1) { // Very unlikely, mostly for robustness
+                return getBTreeNode(root, this._prev).getFirstNode();
+            } else if (this.ptrs.length == 0) { // _prev links should be set correctly
+                return getBTreeNode(root, this._next).getFirstNode();
+            }
+            return this;
+        }
+
+        BTreeKey peekMinimum() {
+            return new BTreeKey(keys[0], ptrs[0]);
+        }
+
+        BTreeKey popMinimum() throws BTreeException {
+            BTreeKey result = new BTreeKey(keys[0], ptrs[0]);
+            set(ArrayUtils.remove(keys, 0), ArrayUtils.remove(ptrs, 0));
+            decrDataLength(result.getKey());
+            if (this.isEmpty()) {
+                removeSelf();
+            }
+            return result;
         }
 
         long addValue(@Nonnull Value key, final long pointer) throws IOException, BTreeException {
@@ -653,6 +759,43 @@ public class BTree extends Paged {
                 }
             }
             return -(low + 1); // key not found.
+        }
+
+        /**
+         * remove all values greater than a threshold
+         * @return variable indicating if it should delete the child node as well
+         */
+        @Beta
+        void removeFrom(Value searchKey) throws BTreeException {
+            resetDataLength();
+            int leftIdx = searchLeftmostKey(keys, searchKey, keys.length);
+            switch (ph.getStatus()) {
+                case BRANCH:
+                    leftIdx = (leftIdx < 0) ? -(leftIdx + 1) : leftIdx;
+                    getChildNode(leftIdx).removeFrom(searchKey);
+
+                    if (leftIdx < keys.length && leftIdx + 1 < ptrs.length)
+                        set(ArrayUtils.copyOf(keys, leftIdx), ArrayUtils.copyOf(ptrs, leftIdx + 1));
+                    break;
+                case LEAF:
+                    leftIdx = (leftIdx < 0) ? -(leftIdx + 1) : leftIdx;
+                    if (leftIdx < keys.length && leftIdx < ptrs.length) {
+                        set(ArrayUtils.copyOf(keys, leftIdx), ArrayUtils.copyOf(ptrs, leftIdx));
+                    }
+                    this._next = -1;
+                    break;
+                default:
+                    throw new BTreeCorruptException(
+                            "Invalid page type '" + ph.getStatus() + "' in removeValue");
+            }
+
+            if (getParent() == null) {
+                while (_rootNode.ptrs.length == 1) {
+                    _rootNode = _rootNode.getChildNode(0);
+                }
+                _rootNode.clearParent();
+            }
+            calculateDataLength();
         }
 
         /** @return pointer of left-most matched item */
@@ -1062,6 +1205,10 @@ public class BTree extends Paged {
             writeValue(page, new Value(bos.toByteArray()));
             this.parentCache = null;
             setDirty(false);
+        }
+
+        private void resetDataLength() {
+            currentDataLen = -1;
         }
 
         private int calculateDataLength() {
