@@ -39,22 +39,14 @@ import btree4j.utils.collections.longs.PurgeOptObservableLongLRUMap;
 import btree4j.utils.io.FastMultiByteArrayOutputStream;
 import btree4j.utils.lang.ArrayUtils;
 import btree4j.utils.lang.Primitives;
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnegative;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
+import com.google.common.annotations.Beta;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import javax.annotation.CheckForNull;
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * BTree represents a Variable Magnitude Simple-Prefix B+Tree File.
@@ -247,6 +239,10 @@ public class BTree extends Paged {
         } catch (IOException e) {
             throw new BTreeException(e);
         }
+    }
+
+    public synchronized void removeValueFrom(Value value) throws BTreeException {
+        _rootNode.removeFrom(value);
     }
 
     /**
@@ -532,6 +528,14 @@ public class BTree extends Paged {
             this.ph = (BTreePageHeader) page.getPageHeader();
         }
 
+        private void clearParent() {
+            if (parentCache != null || ph.parentPage != Paged.NO_PAGE) {
+                ph.parentPage = Paged.NO_PAGE;
+                this.parentCache = null;
+                this.dirty = true;
+            }
+        }
+
         private BTreeNode getParent() {
             if (parentCache != null) {
                 return parentCache;
@@ -653,6 +657,43 @@ public class BTree extends Paged {
                 }
             }
             return -(low + 1); // key not found.
+        }
+
+        /**
+         * remove all values greater than a threshold
+         * @return variable indicating if it should delete the child node as well
+         */
+        @Beta
+        void removeFrom(Value searchKey) throws BTreeException {
+            resetDataLength();
+            int leftIdx = searchLeftmostKey(keys, searchKey, keys.length);
+            switch (ph.getStatus()) {
+                case BRANCH:
+                    leftIdx = (leftIdx < 0) ? -(leftIdx + 1) : leftIdx;
+                    getChildNode(leftIdx).removeFrom(searchKey);
+
+                    if (leftIdx < keys.length && leftIdx + 1 < ptrs.length)
+                        set(ArrayUtils.copyOf(keys, leftIdx), ArrayUtils.copyOf(ptrs, leftIdx + 1));
+                    break;
+                case LEAF:
+                    leftIdx = (leftIdx < 0) ? -(leftIdx + 1) : leftIdx;
+                    if (leftIdx < keys.length && leftIdx < ptrs.length) {
+                        set(ArrayUtils.copyOf(keys, leftIdx), ArrayUtils.copyOf(ptrs, leftIdx));
+                    }
+                    this._next = -1;
+                    break;
+                default:
+                    throw new BTreeCorruptException(
+                            "Invalid page type '" + ph.getStatus() + "' in removeValue");
+            }
+
+            if (getParent() == null) {
+                while (_rootNode.ptrs.length == 1) {
+                    _rootNode = _rootNode.getChildNode(0);
+                }
+                _rootNode.clearParent();
+            }
+            calculateDataLength();
         }
 
         /** @return pointer of left-most matched item */
@@ -1064,6 +1105,10 @@ public class BTree extends Paged {
             setDirty(false);
         }
 
+        private void resetDataLength() {
+            currentDataLen = -1;
+        }
+
         private int calculateDataLength() {
             if (currentDataLen > 0) {
                 return currentDataLen;
@@ -1116,7 +1161,10 @@ public class BTree extends Paged {
         }
 
         /** find lest-most value which matches to the key */
-        long findValue(@Nonnull Value searchKey) throws BTreeException {
+        long findValue(Value searchKey) throws BTreeException {
+            if (searchKey == null) {
+                throw new BTreeException("Can't search on null Value");
+            }
             int idx = searchLeftmostKey(keys, searchKey, keys.length);
             switch (ph.getStatus()) {
                 case BRANCH:

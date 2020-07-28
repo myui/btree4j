@@ -31,6 +31,7 @@
 package btree4j.utils.lang;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
@@ -390,6 +391,105 @@ public final class ArrayUtils {
         return true;
     }
 
+    public static char[] copyOfRange(final char[] original, final int from, final int to) {
+        final int newLength = to - from;
+        if (newLength < 0) {
+            throw new IllegalArgumentException(from + " > " + to);
+        }
+        final char[] copy = new char[newLength];
+        System.arraycopy(original, from, copy, 0, Math.min(original.length - from, newLength));
+        return copy;
+    }
+
+    public static byte[] copyOfRange(final byte[] original, final int from, final int to) {
+        final int newLength = to - from;
+        if (newLength < 0) {
+            throw new IllegalArgumentException(from + " > " + to);
+        }
+        final byte[] copy = new byte[newLength];
+        System.arraycopy(original, from, copy, 0, Math.min(original.length - from, newLength));
+        return copy;
+    }
+
+    public static int[] copyOfRange(final int[] original, final int from, final int to) {
+        final int newLength = to - from;
+        if (newLength < 0) {
+            throw new IllegalArgumentException(from + " > " + to);
+        }
+        final int[] copy = new int[newLength];
+        System.arraycopy(original, from, copy, 0, Math.min(original.length - from, newLength));
+        return copy;
+    }
+
+    public static long[] copyOfRange(final long[] original, final int from, final int to) {
+        final int newLength = to - from;
+        if (newLength < 0) {
+            throw new IllegalArgumentException(from + " > " + to);
+        }
+        final long[] copy = new long[newLength];
+        System.arraycopy(original, from, copy, 0, Math.min(original.length - from, newLength));
+        return copy;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T[] copyOfRange(final T[] original, final int from, final int to) {
+        return copyOfRange(original, from, to, (Class<T[]>) original.getClass());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T, U> T[] copyOfRange(final U[] original, final int from, final int to,
+            final Class<? extends T[]> newType) {
+        final int newLength = to - from;
+        if (newLength < 0) {
+            throw new IllegalArgumentException(from + " > " + to);
+        }
+        final T[] copy = ((Object) newType == (Object) Object[].class) ? (T[]) new Object[newLength]
+                : (T[]) Array.newInstance(newType.getComponentType(), newLength);
+        System.arraycopy(original, from, copy, 0, Math.min(original.length - from, newLength));
+        return copy;
+    }
+
+    public static byte[] copyOf(final byte[] original, final int newLength) {
+        final byte[] copy = new byte[newLength];
+        System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
+        return copy;
+    }
+
+    public static int[] copyOf(final int[] original, final int newLength) {
+        final int[] copy = new int[newLength];
+        System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
+        return copy;
+    }
+
+    public static long[] copyOf(final long[] vals, final int idx) {
+        return Arrays.copyOf(vals, idx);
+
+    }
+
+    public static char[] copyOf(final char[] original, final int newLength) {
+        final char[] copy = new char[newLength];
+        System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
+        return copy;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T[] copyOf(T[] original, int newLength) {
+        return (T[]) copyOf(original, newLength, original.getClass());
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T, U> T[] copyOf(U[] original, int newLength, Class<? extends T[]> newType) {
+        final T[] copy = ((Object) newType == (Object) Object[].class) ? (T[]) new Object[newLength]
+                : (T[]) Array.newInstance(newType.getComponentType(), newLength);
+        System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
+        return copy;
+    }
+
+    /**
+     * @param fromIndex Inclusive first index
+     * @param toIndex Non-inclusive last index
+     * @return returns either the found index or -1 * (the index of the first key greater than key + 1)
+     */
     public static <T extends Comparable<T>> int binarySearch(final T[] a, final int fromIndex,
             final int toIndex, final T key) {
         int low = fromIndex;
