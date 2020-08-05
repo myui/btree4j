@@ -358,7 +358,7 @@ public class BTree extends Paged {
                 cur.scanLeaf(query, callback, scaned == 0);
                 ++scaned;
             }
-            long next = cur._next;
+            long next = cur.next;
             if (next == curPageNum) {
                 throw new IllegalStateException("detected a cyclic link at page#" + curPageNum);
             } else if (next == -1L) {
@@ -508,8 +508,8 @@ public class BTree extends Paged {
 
         private Value[] keys;
         private long[] ptrs;
-        private long _next = -1;
-        private long _prev = -1;
+        private long next = -1;
+        private long prev = -1;
         private Value prefix = null;
 
         private boolean loaded = false;
@@ -866,16 +866,16 @@ public class BTree extends Paged {
                 throws BTreeException {
             final long leftPageNum = left.page.getPageNum();
             final long rightPageNum = right.page.getPageNum();
-            final long origNext = left._next;
+            final long origNext = left.next;
             if (origNext != -1L) {
-                right._next = origNext;
+                right.next = origNext;
                 BTreeNode origNextNode = getBTreeNode(root, origNext);
-                origNextNode._prev = rightPageNum;
+                origNextNode.prev = rightPageNum;
                 origNextNode.setDirty(true);
             }
-            left._next = rightPageNum;
+            left.next = rightPageNum;
             left.setDirty(true);
-            right._prev = leftPageNum;
+            right.prev = leftPageNum;
             right.setDirty(true);
         }
 
@@ -1013,8 +1013,8 @@ public class BTree extends Paged {
                 }
                 // Read in the links if current node is a leaf
                 if (ph.getStatus() == LEAF) {
-                    this._prev = in.readLong();
-                    this._next = in.readLong();
+                    this.prev = in.readLong();
+                    this.next = in.readLong();
                 }
                 this.currentDataLen = v.getLength();
                 this.loaded = true;
@@ -1060,8 +1060,8 @@ public class BTree extends Paged {
             }
             // Write out link if current node is a leaf
             if (ph.getStatus() == LEAF) {
-                os.writeLong(_prev);
-                os.writeLong(_next);
+                os.writeLong(prev);
+                os.writeLong(next);
             }
 
             writeValue(page, new Value(bos.toByteArray()));
@@ -1134,7 +1134,7 @@ public class BTree extends Paged {
                         if (idx == 0 && (ph.getLeftLookup() > 0)) {
                             BTreeNode leftmostNode = this;
                             while (true) {
-                                leftmostNode = getBTreeNode(root, leftmostNode._prev);
+                                leftmostNode = getBTreeNode(root, leftmostNode.prev);
                                 final Value[] lmKeys = leftmostNode.keys;
                                 assert (lmKeys.length > 0);
                                 if (!lmKeys[0].equals(searchKey)) {
@@ -1341,7 +1341,7 @@ public class BTree extends Paged {
                             if (keys[0].equals(key)) {
                                 int lookup = ph.getLeftLookup();
                                 while (lookup > 0) {
-                                    leftmostNode = getBTreeNode(root, leftmostNode._prev);
+                                    leftmostNode = getBTreeNode(root, leftmostNode.prev);
                                     int keylen = leftmostNode.keys.length;
                                     if (lookup < keylen) {
                                         break;
@@ -1359,20 +1359,20 @@ public class BTree extends Paged {
                             return leftmostNode;
                         }
                         case RIGHT_MOST:
-                            if (_next != -1L) {
-                                BTreeNode nextNode = getBTreeNode(root, _next);
+                            if (next != -1L) {
+                                BTreeNode nextNode = getBTreeNode(root, next);
                                 BTreeNode parent = getParent();
-                                throw new IllegalStateException("next=" + _next + ".. more leaf ["
+                                throw new IllegalStateException("next=" + next + ".. more leaf ["
                                         + nextNode + "] exists on the right side of leaf ["
                                         + this.toString() + "]\n parent-ptrs: "
                                         + Arrays.toString(parent.ptrs));
                             }
                             break;
                         case LEFT_MOST:
-                            if (_prev != -1L) {
-                                BTreeNode prevNode = getBTreeNode(root, _prev);
+                            if (prev != -1L) {
+                                BTreeNode prevNode = getBTreeNode(root, prev);
                                 BTreeNode parent = getParent();
-                                throw new IllegalStateException("prev=" + _prev + ".. more leaf ["
+                                throw new IllegalStateException("prev=" + prev + ".. more leaf ["
                                         + prevNode + "] exists on the left side of leaf ["
                                         + this.toString() + "]\n parent-ptrs: "
                                         + Arrays.toString(parent.ptrs));
