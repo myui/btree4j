@@ -17,7 +17,7 @@ It's pretty fast and [100k ops/sec](https://github.com/myui/btree4j/blob/master/
 <dependency>
     <groupId>io.github.myui</groupId>
     <artifactId>btree4j</artifactId>
-    <version>0.9.0</version>
+    <version>0.9.1</version>
 </dependency>
 ```
 
