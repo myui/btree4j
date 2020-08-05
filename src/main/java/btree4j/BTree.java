@@ -400,7 +400,7 @@ public class BTree extends Paged {
         }
     }
 
-    private final BTreeNode getBTreeNode(BTreeRootInfo root, long page, BTreeNode parent)
+    private final BTreeNode getBTreeNode(BTreeRootInfo root, long page, @Nullable BTreeNode parent)
             throws BTreeException {
         BTreeNode node;
         synchronized (_cache) {
@@ -509,7 +509,7 @@ public class BTree extends Paged {
         private Value[] keys;
         private long[] ptrs;
         private long _next = -1;
-        private long _prev = -1; // internal entry for debugging
+        private long _prev = -1;
         private Value prefix = null;
 
         private boolean loaded = false;
@@ -532,6 +532,7 @@ public class BTree extends Paged {
             this.ph = (BTreePageHeader) page.getPageHeader();
         }
 
+        @Nullable
         private BTreeNode getParent() {
             if (parentCache != null) {
                 return parentCache;
@@ -548,12 +549,12 @@ public class BTree extends Paged {
             return null;
         }
 
-        private void setParent(BTreeNode node) {
+        private void setParent(@Nonnull final BTreeNode node) {
             long parentPage = node.page.getPageNum();
             if (parentPage != ph.parentPage) {
                 ph.parentPage = parentPage;
                 this.parentCache = node;
-                this.dirty = true;
+                this.dirty = true; // no need to be setDirty(true);
             }
         }
 
@@ -873,7 +874,9 @@ public class BTree extends Paged {
                 origNextNode.setDirty(true);
             }
             left._next = rightPageNum;
+            left.setDirty(true);
             right._prev = leftPageNum;
+            right.setDirty(true);
         }
 
         private void promoteValue(@Nonnull final Value key, final long leftPtr, final long rightPtr)
@@ -943,11 +946,13 @@ public class BTree extends Paged {
                 ph.setPrefixLength((short) 0);
             }
             setDirty(true);
-            _cache.put(page.getPageNum(), this); // required for paging out
         }
 
         private void setDirty(final boolean dirt) {
             this.dirty = dirt;
+            if (dirt) {
+                _cache.put(page.getPageNum(), this); // required for paging out
+            }
         }
 
         @Nonnull
