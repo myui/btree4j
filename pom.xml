@@ -20,7 +20,7 @@
 
 	<groupId>io.github.myui</groupId>
 	<artifactId>btree4j</artifactId>
-	<version>0.9.0</version>
+	<version>0.9.1</version>
 
 	<packaging>jar</packaging>
 
